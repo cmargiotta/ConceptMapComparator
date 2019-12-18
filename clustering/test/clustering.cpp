@@ -8,8 +8,9 @@
 #include <clustering.hpp>
 
 using namespace std;
+using namespace Catch::Matchers;
 
-SCENARIO("Clustering an empty corpus")
+SCENARIO("Initialization")
 {
 	GIVEN("An empty corpus")
 	{
@@ -34,10 +35,6 @@ SCENARIO("Clustering an empty corpus")
 			}
 		}
 	}
-}
-
-SCENARIO("Clustering with medoids not in the corpus")
-{
 	GIVEN("A set of non-valid medoids")
 	{
 		vector<int> corpus ({1, 2, 3, 4});
@@ -70,13 +67,13 @@ SCENARIO("Clustering a valid dataset")
 		vector<int> corpus ({1, 2, 3, 4, 95, 96, 97, 98});
 		vector<size_t> medoids({2, 6});
 		
-		function<float(int&, int&)> dist  = [](int& x, int& y){return abs(x-y);};
+		function<float(int&, int&)> dist  = [](int& x, int& y){return abs((float)x-(float)y);};
 		function<bool(vector<int>&)> term = [](vector<int>&){return true;};
 		
 		clustering<int> *c = nullptr;
 		
-		REQUIRE_NOTHROW(c = new clustering<int>(corpus, medoids, dist, term));
-		vector<int> cluster;
+		REQUIRE_NOTHROW(c = new clustering<int>(corpus, medoids, dist, term, true));
+		vector<int> cluster, expected ({1, 2, 3, 4});
 		
 		WHEN("Its clustering is computed")
 		{
@@ -85,12 +82,8 @@ SCENARIO("Clustering a valid dataset")
 			THEN("They are correctly computed")
 			{
 				c->get_clusters(cluster);
-								
-				REQUIRE(find(cluster.begin(), cluster.end(), 1) != cluster.end());
-				REQUIRE(find(cluster.begin(), cluster.end(), 2) != cluster.end());
-				REQUIRE(find(cluster.begin(), cluster.end(), 3) != cluster.end());
-				REQUIRE(find(cluster.begin(), cluster.end(), 4) != cluster.end());
-				REQUIRE(cluster.size() == 4);
+					
+				REQUIRE_THAT(cluster, UnorderedEquals(expected));
 			}
 		}
 		
