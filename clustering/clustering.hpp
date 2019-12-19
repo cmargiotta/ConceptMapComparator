@@ -12,6 +12,8 @@
 #include <map>
 #include <algorithm>
 
+#include <thread_pool.hpp>
+
 using std::cout;
 
 template <typename T> 
@@ -43,14 +45,25 @@ class clustering
         
         void compute_similarity_matrix()
         {
+            auto& pool = thread_pool::get_instance();
+            
             for (size_t i = 0; i < elements.size(); i++)
             {
-                for (size_t j = 0; j <= i; j++)
+                std::function<void()> job = [this, i]()
                 {
-                    similarity_matrix[i][j] = distance(elements[i], elements[j]);
-                    similarity_matrix[j][i] = similarity_matrix[i][j];
-                }
+                    for (size_t j = 0; j <= i; j++)
+                    {
+                        this->similarity_matrix[i][j] = this->distance(elements[i], elements[j]);
+                        this->similarity_matrix[j][i] = this->similarity_matrix[i][j];
+                    }
+                };
+                
+                pool.commit(job);
             }
+            
+            //Waiting for the jobs to finish
+            while (!pool.get_status())
+            {}
         }
         
         void assign_medoids()
@@ -58,26 +71,36 @@ class clustering
             if (verbose)
                 cout << "Assigning medoids\n";
                 
-            float min;
-            size_t min_medoid;
-            
+            auto& pool = thread_pool::get_instance();
+                
             for (size_t i = 0; i < elements.size(); i++)
             {
-                min = std::numeric_limits<float>::max();
-                for (size_t m: medoids)
+                std::function <void()> job = [this, i]()
                 {
-                    if (similarity_matrix[i][m] < min)
+                    float min = std::numeric_limits<float>::max();;
+                    size_t min_medoid;
+                    
+                    for (size_t m: this->medoids)
                     {
-                        min = similarity_matrix[i][m];
-                        min_medoid = m;
+                        if (this->similarity_matrix[i][m] < min)
+                        {
+                            min = this->similarity_matrix[i][m];
+                            min_medoid = m;
+                        }
                     }
-                }
+                    
+                    this->medoids_assignation[i] = min_medoid;
+                    
+                    if (this->verbose)
+                        cout << "Assigned " << elements[i] << " to " << elements[min_medoid] << "\n";
+                };
                 
-                medoids_assignation[i] = min_medoid;
-                
-                if (verbose)
-                    cout << "Assigned " << elements[i] << " to " << elements[min_medoid] << "\n";
+                pool.commit(job);
             }
+            
+            //Waiting for the jobs to finish
+            while (!pool.get_status())
+            {}
             
             compute_average_distances();
         }

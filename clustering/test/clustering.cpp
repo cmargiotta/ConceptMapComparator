@@ -6,12 +6,16 @@
 #include <algorithm>
 
 #include <clustering.hpp>
+#include <thread_pool.hpp>
 
 using namespace std;
 using namespace Catch::Matchers;
 
 SCENARIO("Initialization")
 {
+	//Using 4 threads
+	thread_pool::get_instance(4);
+	
 	GIVEN("An empty corpus")
 	{
 		vector<int> corpus;
@@ -73,6 +77,7 @@ SCENARIO("Clustering a valid dataset")
 		clustering<int> *c = nullptr;
 		
 		REQUIRE_NOTHROW(c = new clustering<int>(corpus, medoids, dist, term, true));
+		REQUIRE(c != nullptr);
 		vector<int> cluster, expected ({1, 2, 3, 4});
 		
 		WHEN("Its clustering is computed")
