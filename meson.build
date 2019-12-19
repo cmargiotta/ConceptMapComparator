@@ -13,5 +13,5 @@ pthread_dep = cpp.find_library('pthread', required : true)
 
 catch2_dep = declare_dependency(include_directories : 'subprojects/catch2/single_include/catch2')
 
-subdir('clustering')
 subdir('thread_pool')
+subdir('clustering')

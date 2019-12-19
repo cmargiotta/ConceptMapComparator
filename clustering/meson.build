@@ -1,4 +1,4 @@
-clustering_dep = declare_dependency(include_directories : '.')
+clustering_dep = declare_dependency(include_directories : '.', dependencies: [thread_pool_dep])
 clustering_test_dep = declare_dependency(include_directories : 'test', dependencies : [clustering_dep])
 
 test_clustering_sources = files([
