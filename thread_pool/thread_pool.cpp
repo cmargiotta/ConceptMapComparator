@@ -59,12 +59,6 @@ thread_pool& thread_pool::get_instance(size_t thread_number)
 	return instance;
 }
 
-void thread_pool::commit(std::function<void()> job)
-{
-	std::unique_lock lock(pool_mutex);
-	jobs.emplace(job);
-}
-
 bool thread_pool::get_status()
 {
 	return jobs.empty();

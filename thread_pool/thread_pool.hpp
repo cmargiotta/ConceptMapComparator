@@ -22,9 +22,21 @@ class thread_pool
 		~thread_pool();
 	public:
 		//WARNING: Only the thread_number in the first call will be considered
-		static thread_pool& get_instance(size_t thread_number = 1);
+		static thread_pool& get_instance(size_t thread_number = 0);
 		
-		void commit(std::function<void()> job);
+		//Inlining this function allows to call commit(...) without performance issues when threads.size() is 0
+		inline void commit(std::function<void()> job)
+		{
+			if (threads.size() != 0)
+			{
+				std::unique_lock lock(pool_mutex);
+				jobs.emplace(job);
+			}
+			else
+			{
+				job();
+			}
+		}
 		//Returns true if the jobs queue is empty
 		bool get_status();
 };
