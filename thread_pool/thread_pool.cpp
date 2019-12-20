@@ -40,7 +40,6 @@ thread_pool::thread_pool(size_t thread_number)
 
 thread_pool::~thread_pool()
 {
-	cout << "Destroying\n";
 	//Killing all threads
 	kill_children = true;
 	

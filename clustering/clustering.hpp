@@ -84,7 +84,7 @@ class clustering
             {
                 std::function <void()> job = [this, i]()
                 {
-                    float min = std::numeric_limits<float>::max();;
+                    float min = std::numeric_limits<float>::max();
                     size_t min_medoid;
                     
                     for (size_t m: this->medoids)
@@ -204,7 +204,7 @@ class clustering
 	public:
 		//Constructor
 		clustering( const std::vector<T>& corpus, 
-                    const std::vector<size_t>& starting_medoids, 
+                    const std::vector<size_t> starting_medoids, 
                     std::function <float(T&, T&)>& dist, 
                     std::function <bool(std::vector<T>&, size_t, float)>& termination_cond
                   ):

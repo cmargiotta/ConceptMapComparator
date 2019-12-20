@@ -39,7 +39,7 @@ SCENARIO("Initialization")
 			}
 		}
 	}
-	GIVEN("A set of non-valid medoids")
+	GIVEN("A set of invalid medoids")
 	{
 		vector<int> corpus ({1, 2, 3, 4});
 		vector<size_t> medoids({99, 100});

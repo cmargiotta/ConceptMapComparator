@@ -23,3 +23,4 @@ catch2_dep = declare_dependency(
 
 subdir('thread_pool')
 subdir('clustering')
+subdir('performance_tests')
