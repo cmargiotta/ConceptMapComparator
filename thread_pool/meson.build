@@ -8,7 +8,6 @@ thread_pool_dep = declare_dependency(include_directories : '.', link_with: threa
 thread_pool_test_dep = declare_dependency(include_directories : 'test', dependencies : [thread_pool_dep])
 
 test_thread_pool_sources = files([
-    'test/main.cpp',
     'test/thread_pool.cpp'
 ])
 

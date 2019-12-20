@@ -11,7 +11,15 @@ project('ConceptMapComparator',
 cpp = meson.get_compiler('cpp')
 pthread_dep = cpp.find_library('pthread', required : true)
 
-catch2_dep = declare_dependency(include_directories : 'subprojects/catch2/single_include/catch2')
+catch2_main_lib = static_library(
+    'catch2_main',
+    ['catch_main.cpp'],
+    include_directories : 'subprojects/catch2/single_include/catch2'
+)
+catch2_dep = declare_dependency(
+    include_directories : 'subprojects/catch2/single_include/catch2',
+    link_with: [catch2_main_lib]
+)
 
 subdir('thread_pool')
 subdir('clustering')
