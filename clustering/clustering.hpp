@@ -5,7 +5,6 @@
 #include <type_traits>
 #include <utility>
 #include <functional>
-#include <iostream>
 #include <limits>
 #include <random>
 #include <stdexcept>
@@ -14,7 +13,19 @@
 
 #include <thread_pool.hpp>
 
-using std::cout;
+template <typename T>
+struct cluster
+{
+    std::vector<T> elements;
+    size_t medoid;
+    float average_distance;
+    
+    cluster(std::vector<T>& el, size_t med, float dist):
+        elements(el.begin(), el.end()),
+        medoid(med),
+        average_distance(dist)
+    {}
+};
 
 template <typename T> 
 class clustering
@@ -24,7 +35,7 @@ class clustering
 	private:
 		//Corpus
 		std::vector <T>                         elements;
-		std::vector <T>                         valid_cluster;
+		std::vector <cluster<T>>                valid_clusters;
         //elements[medoids[i]] is the i-th medoid
 		std::vector <size_t>                    medoids;
         //similarity_matrix[i][j] is the distance between elements[i] and elements[j]
@@ -166,29 +177,28 @@ class clustering
         
         bool check_termination_condition()
         {
-            std::vector<T> cluster;
+            std::vector<T> clust;
             //Every cluster, on average, has elements/clusters objects
-            cluster.resize(elements.size()/medoids.size());
+            clust.resize(elements.size()/medoids.size());
             
             for (size_t medoid_index: medoids)
             {
-                cluster.clear();
+                clust.clear();
                 for (size_t i = 0; i < elements.size(); i++)
                 {
                     if (medoids_assignation[i] == medoid_index)
                     {
-                        cluster.push_back(elements[i]);
+                        clust.push_back(elements[i]);
                     }
                 }
                 
-                if (termination_condition(cluster))
+                if (termination_condition(clust))
                 {
-                    valid_cluster.insert(valid_cluster.begin(), cluster.begin(), cluster.end());
-                    return true;
+                    valid_clusters.emplace_back(clust, medoid_index, average_distances[medoid_index]);
                 }
             }
             
-            return false;
+            return valid_clusters.size() != 0;
         }
 	
 	public:
@@ -257,9 +267,9 @@ class clustering
             }
 		}
 		
-		void get_clusters(std::vector<T>& clusters) const
+		const std::vector<cluster<T>>& get_clusters() const noexcept
 		{
-			clusters.insert(clusters.begin(), valid_cluster.begin(), valid_cluster.end());
+			return valid_clusters;
 		}
 };
 

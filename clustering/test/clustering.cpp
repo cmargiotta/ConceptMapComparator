@@ -78,7 +78,7 @@ SCENARIO("Execution")
 		
 		REQUIRE_NOTHROW(c = new clustering<int>(corpus, medoids, dist, term));
 		REQUIRE(c != nullptr);
-		vector<int> cluster, expected ({1, 2, 3, 4});
+		vector<int> expected ({1, 2, 3, 4});
 		
 		WHEN("Its clustering is computed")
 		{
@@ -86,9 +86,9 @@ SCENARIO("Execution")
 			
 			THEN("They are correctly computed")
 			{
-				c->get_clusters(cluster);
+				auto clusters = c->get_clusters();
 					
-				REQUIRE_THAT(cluster, UnorderedEquals(expected));
+				REQUIRE_THAT(clusters[0].elements, UnorderedEquals(expected));
 			}
 		}
 		
@@ -113,7 +113,7 @@ SCENARIO("Execution")
 		
 		REQUIRE_NOTHROW(c = new clustering<int>(corpus, medoids, dist, term));
 		REQUIRE(c != nullptr);
-		vector<int> cluster, expected ({1, 2, 3, 4});
+		vector<int> expected ({1, 2, 3, 4});
 		
 		WHEN("Its clustering is computed")
 		{
@@ -121,9 +121,9 @@ SCENARIO("Execution")
 			
 			THEN("They are correctly computed")
 			{
-				c->get_clusters(cluster);
+				auto clusters = c->get_clusters();
 					
-				REQUIRE_THAT(cluster, UnorderedEquals(expected));
+				REQUIRE_THAT(clusters[0].elements, UnorderedEquals(expected));
 			}
 		}
 		
