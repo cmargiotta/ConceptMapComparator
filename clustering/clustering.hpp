@@ -22,7 +22,6 @@ class clustering
 	static_assert(std::is_copy_constructible<T>::value, "Cannot cluster with non-copy constructable types.");
 	
 	private:
-        bool                                    verbose;
 		//Corpus
 		std::vector <T>                         elements;
 		std::vector <T>                         valid_cluster;
@@ -68,9 +67,6 @@ class clustering
         
         void assign_medoids()
         {
-            if (verbose)
-                cout << "Assigning medoids\n";
-                
             auto& pool = thread_pool::get_instance();
                 
             for (size_t i = 0; i < elements.size(); i++)
@@ -90,9 +86,6 @@ class clustering
                     }
                     
                     this->medoids_assignation[i] = min_medoid;
-                    
-                    if (this->verbose)
-                        cout << "Assigned " << elements[i] << " to " << elements[min_medoid] << "\n";
                 };
                 
                 pool.commit(job);
@@ -107,9 +100,6 @@ class clustering
         
         void compute_average_distances()
         {
-            if (verbose)
-                cout << "Computing average distance\n";
-                
             std::map<size_t, size_t> counters;
             
             //Cleaning array
@@ -126,14 +116,6 @@ class clustering
                 //Adding new distance to average (av = av + (x-av)/(n+1))
                 average_distances[medoids_assignation[i]] += ((similarity_matrix[i][medoids_assignation[i]] - average_distances[medoids_assignation[i]])/counters[medoids_assignation[i]]);
             }
-            
-            if (verbose)
-            {
-                cout << "\nAverage distances:\n";
-                for (size_t i = 0; i < medoids.size(); i++)
-                    cout << elements[medoids[i]] << " -> " << average_distances[medoids[i]] << "\n";
-                cout << '\n';
-            }
         }
         
         float cost(size_t new_medoid)
@@ -141,7 +123,7 @@ class clustering
             size_t old_medoid = medoids_assignation[new_medoid], n = 0;
             float old_average = average_distances[old_medoid];
             float new_average = 0.0f;
-            
+                        
             //Computing average distance for the new medoid
             for (size_t i = 0; i < elements.size(); i++)
             {
@@ -152,16 +134,14 @@ class clustering
                 }
             }
             
-            return old_average - new_average;
+            return new_average - old_average;
         }
         
         bool select_new_random_medoid()
         {
-            if (verbose)
-                cout << "Trying to select a new random medoid\n";
             size_t random_index = distribution(generator);
             float switching_cost = cost(random_index);
-            
+
             if (switching_cost < 0)
             {
                 //old_medoid is the medoid of the selected random element
@@ -178,13 +158,8 @@ class clustering
                 //Recomputing clusters
                 assign_medoids();
                 
-                if (verbose)
-                    cout << "Selected " << random_index << " with cost " << switching_cost << "\n";
-                
                 return true;
             }
-            if (verbose)
-                cout << "No new medoids\n";
             
             return false;
         }
@@ -221,10 +196,8 @@ class clustering
 		clustering( const std::vector<T>& corpus, 
                     const std::vector<size_t>& starting_medoids, 
                     std::function <float(T&, T&)>& dist, 
-                    std::function <bool(std::vector<T>&)>& termination_cond,
-                    bool v = false
+                    std::function <bool(std::vector<T>&)>& termination_cond
                   ):
-            verbose (v),
             elements(corpus.begin(), corpus.end()),
 			medoids(starting_medoids.begin(), starting_medoids.end()), 
 			distance(dist), 
@@ -274,21 +247,14 @@ class clustering
 		
 		void find_clusters()
 		{
-            if (verbose)
-                cout << "Finding clusters\n";
 			assign_medoids();
             
             while (!check_termination_condition())
             {
-                if (verbose)
-                    cout << "Termination condition not satisfied\n";
                 //Selecting new random medoid
                 while (select_new_random_medoid())
                 {}
             }
-            
-            if (verbose)
-                cout << "Termination condition satisfied\n";
 		}
 		
 		void get_clusters(std::vector<T>& clusters) const

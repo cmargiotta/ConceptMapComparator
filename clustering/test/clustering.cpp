@@ -64,9 +64,9 @@ SCENARIO("Initialization")
 	}
 }
 
-SCENARIO("Clustering a valid dataset")
+SCENARIO("Execution")
 {
-	GIVEN("A valid dataset and the relative clustering instance")
+	GIVEN("A valid dataset and a valid set of starting medoids")
 	{
 		vector<int> corpus ({1, 2, 3, 4, 95, 96, 97, 98});
 		vector<size_t> medoids({2, 6});
@@ -76,7 +76,42 @@ SCENARIO("Clustering a valid dataset")
 		
 		clustering<int> *c = nullptr;
 		
-		REQUIRE_NOTHROW(c = new clustering<int>(corpus, medoids, dist, term, true));
+		REQUIRE_NOTHROW(c = new clustering<int>(corpus, medoids, dist, term));
+		REQUIRE(c != nullptr);
+		vector<int> cluster, expected ({1, 2, 3, 4});
+		
+		WHEN("Its clustering is computed")
+		{
+			REQUIRE_NOTHROW(c->find_clusters());
+			
+			THEN("They are correctly computed")
+			{
+				c->get_clusters(cluster);
+					
+				REQUIRE_THAT(cluster, UnorderedEquals(expected));
+			}
+		}
+		
+		if (c)
+		{
+			delete c;
+		}
+	}
+	GIVEN("A valid dataset and an invalid set of starting medoids")
+	{
+		vector<int> corpus ({1, 2, 3, 4, 95, 96, 97, 98});
+		vector<size_t> medoids({2, 3});
+		
+		function<float(int&, int&)> dist  = [](int& x, int& y){return abs((float)x-(float)y);};
+		function<bool(vector<int>&)> term = [](vector<int>& cluster){
+			int sum = 0;
+			for (auto i: cluster) sum += i;
+			return sum == 10;
+		};
+		
+		clustering<int> *c = nullptr;
+		
+		REQUIRE_NOTHROW(c = new clustering<int>(corpus, medoids, dist, term));
 		REQUIRE(c != nullptr);
 		vector<int> cluster, expected ({1, 2, 3, 4});
 		
