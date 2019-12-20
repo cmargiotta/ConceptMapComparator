@@ -22,7 +22,7 @@ SCENARIO("Initialization")
 		vector<size_t> medoids;
 		
 		function<float(int&, int&)> dist  = [](int&, int&){return 0.0f;};
-		function<bool(vector<int>&)> term = [](vector<int>&){return true;};
+		function<bool(vector<int>&, size_t, float)> term = [](vector<int>&, size_t, float){return true;};
 		
 		WHEN("A clustering instance is initialized")
 		{
@@ -45,7 +45,7 @@ SCENARIO("Initialization")
 		vector<size_t> medoids({99, 100});
 		
 		function<float(int&, int&)> dist  = [](int&, int&){return 0.0f;};
-		function<bool(vector<int>&)> term = [](vector<int>&){return true;};
+		function<bool(vector<int>&, size_t, float)> term = [](vector<int>&, size_t, float){return true;};
 		
 		WHEN("A clustering instance is initialized")
 		{
@@ -72,13 +72,13 @@ SCENARIO("Execution")
 		vector<size_t> medoids({2, 6});
 		
 		function<float(int&, int&)> dist  = [](int& x, int& y){return abs((float)x-(float)y);};
-		function<bool(vector<int>&)> term = [](vector<int>&){return true;};
+		function<bool(vector<int>&, size_t, float)> term = [](vector<int>&, size_t, float){return true;};
 		
 		clustering<int> *c = nullptr;
 		
 		REQUIRE_NOTHROW(c = new clustering<int>(corpus, medoids, dist, term));
 		REQUIRE(c != nullptr);
-		vector<int> expected ({1, 2, 3, 4});
+		vector<int> expected1 ({1, 2, 3, 4}), expected2 ({95, 96, 97, 98});
 		
 		WHEN("Its clustering is computed")
 		{
@@ -88,7 +88,9 @@ SCENARIO("Execution")
 			{
 				auto clusters = c->get_clusters();
 					
-				REQUIRE_THAT(clusters[0].elements, UnorderedEquals(expected));
+				REQUIRE_THAT(clusters[0].elements, UnorderedEquals(expected1));
+				REQUIRE_THAT(clusters[1].elements, UnorderedEquals(expected2));
+				REQUIRE(clusters.size() == 2);
 			}
 		}
 		
@@ -103,17 +105,15 @@ SCENARIO("Execution")
 		vector<size_t> medoids({2, 3});
 		
 		function<float(int&, int&)> dist  = [](int& x, int& y){return abs((float)x-(float)y);};
-		function<bool(vector<int>&)> term = [](vector<int>& cluster){
-			int sum = 0;
-			for (auto i: cluster) sum += i;
-			return sum == 10;
+		function<bool(vector<int>&, size_t, float)> term = [](vector<int>& c, size_t, float average_dist){
+			return average_dist <= 10.0f && c.size() == 4;
 		};
 		
 		clustering<int> *c = nullptr;
 		
 		REQUIRE_NOTHROW(c = new clustering<int>(corpus, medoids, dist, term));
 		REQUIRE(c != nullptr);
-		vector<int> expected ({1, 2, 3, 4});
+		vector<int> expected1 ({1, 2, 3, 4}), expected2 ({95, 96, 97, 98});
 		
 		WHEN("Its clustering is computed")
 		{
@@ -123,7 +123,9 @@ SCENARIO("Execution")
 			{
 				auto clusters = c->get_clusters();
 					
-				REQUIRE_THAT(clusters[0].elements, UnorderedEquals(expected));
+				REQUIRE_THAT(clusters[0].elements, UnorderedEquals(expected1));
+				REQUIRE_THAT(clusters[1].elements, UnorderedEquals(expected2));
+				REQUIRE(clusters.size() == 2);
 			}
 		}
 		
