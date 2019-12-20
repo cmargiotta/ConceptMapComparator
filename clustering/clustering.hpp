@@ -47,7 +47,7 @@ class clustering
 		
 		std::function <float(T&, T&)>           distance;
         //If a cluster satisfies this predicate, the algorithm ends
-		std::function <bool(std::vector<T>&)>   termination_condition;
+		std::function <bool(std::vector<T>&, size_t, float)>   termination_condition;
         
         //Random number generator
         std::default_random_engine              generator;
@@ -192,7 +192,7 @@ class clustering
                     }
                 }
                 
-                if (termination_condition(clust))
+                if (termination_condition(clust, medoid_index, average_distances[medoid_index]))
                 {
                     valid_clusters.emplace_back(clust, medoid_index, average_distances[medoid_index]);
                 }
@@ -206,7 +206,7 @@ class clustering
 		clustering( const std::vector<T>& corpus, 
                     const std::vector<size_t>& starting_medoids, 
                     std::function <float(T&, T&)>& dist, 
-                    std::function <bool(std::vector<T>&)>& termination_cond
+                    std::function <bool(std::vector<T>&, size_t, float)>& termination_cond
                   ):
             elements(corpus.begin(), corpus.end()),
 			medoids(starting_medoids.begin(), starting_medoids.end()), 
