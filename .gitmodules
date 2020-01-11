@@ -1,3 +1,9 @@
 [submodule "subprojects/Catch2"]
 	path = subprojects/Catch2
 	url = ../../catchorg/Catch2
+[submodule "subprojects/semanet"]
+	path = subprojects/semanet
+	url = ../../alexge233/semanet
+[submodule "subprojects/wordnet-blast"]
+	path = subprojects/wordnet-blast
+	url = ../../jardon-u/wordnet-blast

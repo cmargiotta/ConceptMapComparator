@@ -8,8 +8,13 @@ project('ConceptMapComparator',
     ]
 )
 
+cmake = import('cmake')
+
 cpp = meson.get_compiler('cpp')
 pthread_dep = cpp.find_library('pthread', required : true)
+
+wordnet_blast_proj = cmake.subproject('wordnet-blast')
+wordnet_blast_dep  = [wordnet_blast_proj.dependency('wnb')]
 
 catch2_main_lib = static_library(
     'catch2_main',
@@ -24,3 +29,4 @@ catch2_dep = declare_dependency(
 subdir('thread_pool')
 subdir('clustering')
 subdir('performance_tests')
+subdir('wordnet')
