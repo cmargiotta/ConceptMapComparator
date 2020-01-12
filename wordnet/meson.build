@@ -1,6 +1,9 @@
 wordnet_lib = static_library(
 	'wordnet',
-	['wordnet.cpp'],
+	[
+		'wordnet.cpp', 
+		'similarity.cpp'
+	],
 	include_directories: ['.']
 )
 

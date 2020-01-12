@@ -13,9 +13,6 @@ cmake = import('cmake')
 cpp = meson.get_compiler('cpp')
 pthread_dep = cpp.find_library('pthread', required : true)
 
-wordnet_blast_proj = cmake.subproject('wordnet-blast')
-wordnet_blast_dep  = [wordnet_blast_proj.dependency('wnb')]
-
 catch2_main_lib = static_library(
     'catch2_main',
     ['catch_main.cpp'],
