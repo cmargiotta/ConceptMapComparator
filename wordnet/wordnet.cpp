@@ -18,6 +18,15 @@ void wordnet::discard_copyright_disclaimer(std::ifstream& file)
 	file.seekg(-1, file.cur);
 }
 
+void wordnet::add_hyponym(unsigned int start_id, unsigned int id)
+{
+	for (auto i: hypernyms[(id==0) ? start_id : id])
+	{
+		hyponyms[i].insert(start_id);
+		add_hyponym(start_id, i);
+	}
+}
+
 wordnet::wordnet(const std::string& path):
 	noun_index((path.back() == '/') ? (path + "index.noun") : (path + "/index.noun"), std::ifstream::binary),
 	noun_data((path.back() == '/') ? (path + "data.noun") : (path + "/data.noun"), std::ifstream::binary)
@@ -50,14 +59,6 @@ wordnet::wordnet(const std::string& path):
 			{
 				hypernym_present = true;
 			}
-		}
-		
-		//If there are no hypernyms, the word can be discarded
-		if (!hypernym_present)
-		{
-			//Discarding the remaining line
-			noun_index.ignore(1024, '\n');
-			continue;
 		}
 		
 		noun_index >> std::dec >> synset_count;
@@ -106,7 +107,15 @@ wordnet::wordnet(const std::string& path):
 				}
 			}
 		}
-	} 
+	}
+	
+	for (auto& i: words)
+	{
+		for (auto w: i.second)
+		{
+			add_hyponym(w);
+		}
+	}
 }
 
 std::string wordnet::get_word(unsigned int id)
@@ -120,13 +129,13 @@ std::string wordnet::get_word(unsigned int id)
 	return word;
 }
 
-void build_tree(unsigned int id, tree<unsigned int>& t, std::map<unsigned int, std::set<unsigned int>>& hypernyms, unsigned int entity, unsigned int depth = 1)
+void build_tree(unsigned int id, std::map <unsigned int, unsigned int>& t, std::map<unsigned int, std::set<unsigned int>>& hypernyms, unsigned int entity, unsigned int depth = 1)
 {
 	for (unsigned int child_id: hypernyms[id])
 	{
-		unsigned int old_depth = t.path[child_id];
+		unsigned int old_depth = t[child_id];
 
-		t.path[child_id] = (old_depth != 0) ? min(old_depth, depth) : depth;
+		t[child_id] = (old_depth != 0) ? min(old_depth, depth) : depth;
 		
 		if (child_id != entity)
 		{
@@ -137,10 +146,30 @@ void build_tree(unsigned int id, tree<unsigned int>& t, std::map<unsigned int, s
 
 void wordnet::hypernym_tree(synset& word)
 {
-	build_tree(word.id, word.path_tree, hypernyms, entity_id);
+	build_tree(word.id, word.hypernym_path, hypernyms, entity_id);
 }
 
-unsigned int wordnet::get_id(std::string& word)
+const std::vector<unsigned int>& wordnet::get_id(std::string& word)
 {
 	return words[word];
+}
+
+unsigned int wordnet::get_hyponym_count(unsigned int word)
+{
+	return hyponyms[word].size();
+}
+
+unsigned int wordnet::get_concept_number()
+{
+	return words.size();
+}
+
+synset::synset(unsigned int id)
+{
+	this->id = id;
+	wordnet& wb = wordnet::get_instance();
+	
+	hypernym_path[id] = 0;
+	
+	wb.hypernym_tree(*this);
 }

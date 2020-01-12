@@ -4,47 +4,46 @@
 #include <list>
 #include <utility>
 #include <algorithm>
+#include <cmath>
 #include <iostream>
 
 #include "wordnet.hpp"
 
 using namespace std;
 
-float similarity::compare_words(unsigned int word1, unsigned int word2)
+unsigned int similarity::LCS(const synset& word1, const synset& word2)
 {
-	static wordnet wn("wordnet/dict/");
-	
-	tree<unsigned int> path1 = wn.hypernym_tree(word1);
-	tree<unsigned int> path2 = wn.hypernym_tree(word2);
-	
-	for (auto i: path1.path)
-		cout << wn.get_word(i.first) << "   " << i.second << endl;
-		cout << endl;cout << endl;
-	for (auto i: path2.path)
-		cout << wn.get_word(i.first) << "   " << i.second << endl;
-		cout << endl;cout << endl;
-	
 	std::map<unsigned int, unsigned int> intersection;
-	std::set_intersection  (path1.path.begin(), 
-							path1.path.end(), 
-							path2.path.begin(), 
-							path2.path.end(), 
+	std::set_intersection  (word1.hypernym_path.begin(), 
+							word1.hypernym_path.end(), 
+							word2.hypernym_path.begin(), 
+							word2.hypernym_path.end(), 
 							inserter (intersection, intersection.begin()),
-		[](auto& p1, auto& p2)
-        {
-			 return p1.first < p2.first;
-		});
+							[](auto& p1, auto& p2)
+							{
+								 return p1.first < p2.first;
+							});
 		
-	auto best_common_parent = *min_element(intersection.begin(), intersection.end(), [&path1, &path2](auto el1, auto el2)
+	unsigned int best_common_parent = min_element(intersection.begin(), intersection.end(), [&word1, &word2](auto el1, auto el2)
 	{
-		return (path1.path[el1.first]+path2.path[el1.first]) < (path1.path[el2.first]+path2.path[el2.first]);
-	});
+		auto e1 = el1.first;
+		auto e2 = el2.first;
+		return (word1.hypernym_path.at(e1)+word2.hypernym_path.at(e1)) < (word1.hypernym_path.at(e2)+word2.hypernym_path.at(e2));
+	})->first;
 	
-	for (auto i: intersection)
-		cout << wn.get_word(i.first) << endl;
-	cout << endl;
+	return best_common_parent;
+}
+
+float similarity::informative_content(unsigned int word)
+{
+	wordnet& wn = wordnet::get_instance();
 	
-	cout << wn.get_word(best_common_parent.first) << endl;
+	return 1 - log(wn.get_hyponym_count(word)+1)/log(wn.get_concept_number());
+}
+
+float similarity::compare_words(const synset& word1, const synset& word2)
+{	
+	unsigned int lcs = LCS(word1, word2);
 	
-	return 0.0f;
+	return (2.0f*informative_content(lcs))/(informative_content(word1.id) + informative_content(word2.id));
 }

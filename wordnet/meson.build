@@ -13,7 +13,7 @@ wordnet_dep = declare_dependency(
 )
 
 test_wordnet_sources = files([
-    'test/comparison.cpp'
+    'test/similarity.cpp'
 ])
 
 test_comparison = executable('test_comparison', 
