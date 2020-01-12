@@ -4,6 +4,13 @@
 #include <iostream>
 
 using namespace std;
+
+wordnet::~wordnet()
+{
+	noun_index.close();
+	noun_data.close();
+}
+
 void wordnet::discard_copyright_disclaimer(std::ifstream& file)
 {
 	char buffer;
@@ -123,30 +130,29 @@ std::string wordnet::get_word(unsigned int id)
 	noun_data.seekg(id);
 	
 	std::string word;
-	
 	noun_data >> word >> word >> word >> word >> word;
 	
 	return word;
 }
 
-void build_tree(unsigned int id, std::map <unsigned int, unsigned int>& t, std::map<unsigned int, std::set<unsigned int>>& hypernyms, unsigned int entity, unsigned int depth = 1)
+void wordnet::build_tree(unsigned int id, std::map<unsigned int, unsigned int>& t, unsigned int depth)
 {
 	for (unsigned int child_id: hypernyms[id])
 	{
+		//Selecting min depth for every node 
 		unsigned int old_depth = t[child_id];
-
 		t[child_id] = (old_depth != 0) ? min(old_depth, depth) : depth;
 		
-		if (child_id != entity)
+		if (child_id != entity_id)
 		{
-			build_tree(child_id, t, hypernyms, entity, depth + 1);
+			build_tree(child_id, t, depth + 1);
 		}
 	}
 }
 
 void wordnet::hypernym_tree(synset& word)
 {
-	build_tree(word.id, word.hypernym_path, hypernyms, entity_id);
+	build_tree(word.id, word.hypernym_path);
 }
 
 const std::vector<unsigned int>& wordnet::get_id(std::string& word)

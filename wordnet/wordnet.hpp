@@ -28,20 +28,28 @@ class wordnet
 		std::map<unsigned int, std::set<unsigned int>> 		hypernyms;
 		std::map<unsigned int, std::set<unsigned int>>		hyponyms;
 		
-		void add_hyponym(unsigned int start_id, unsigned int id=0);
+		//Private constructor
 		wordnet(const std::string& path);
+		
+		void add_hyponym(unsigned int start_id, unsigned int id=0);
 		void discard_copyright_disclaimer(std::ifstream& file);
+		void build_tree(unsigned int id, std::map <unsigned int, unsigned int>& t, unsigned int depth = 1);
 	public:
+		//Singleton instance
 		static wordnet& get_instance(const std::string& path = "wordnet/dict/")
 		{
 			static wordnet wb (path);
 			return wb;
 		}
-		std::string get_word(unsigned int id);
-		const std::vector<unsigned int>& get_id(std::string& word);
-		void hypernym_tree(synset& word);
-		unsigned int get_hyponym_count(unsigned int word);
-		unsigned int get_concept_number();
+		
+		~wordnet();
+		
+		void 			hypernym_tree(synset& word);
+		
+		const 			std::vector<unsigned int>& get_id(std::string& word);
+		unsigned int 	get_hyponym_count(unsigned int word);
+		unsigned int 	get_concept_number();
+		std::string 	get_word(unsigned int id);
 };
 
 #endif
