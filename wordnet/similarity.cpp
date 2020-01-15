@@ -13,23 +13,23 @@ using namespace std;
 
 unsigned int similarity::LCS(const synset& word1, const synset& word2)
 {
-	std::map<unsigned int, unsigned int> intersection;
-	std::set_intersection  (word1.hypernym_path.begin(), 
-							word1.hypernym_path.end(), 
-							word2.hypernym_path.begin(), 
-							word2.hypernym_path.end(), 
-							inserter (intersection, intersection.begin()),
-							[](auto& p1, auto& p2)
-							{
-								 return p1.first < p2.first;
-							});
-		
-	unsigned int best_common_parent = min_element(intersection.begin(), intersection.end(), [&word1, &word2](auto el1, auto el2)
+	std::set<unsigned int> intersection;
+	
+	for (const auto& hyperynm1: word1.hypernym_path)
 	{
-		auto e1 = el1.first;
-		auto e2 = el2.first;
-		return (word1.hypernym_path.at(e1)+word2.hypernym_path.at(e1)) < (word1.hypernym_path.at(e2)+word2.hypernym_path.at(e2));
-	})->first;
+		for (const auto& hypernym2: word2.hypernym_path)
+		{
+			if (hyperynm1.first == hypernym2.first)
+			{
+				intersection.insert(hyperynm1.first);
+			}
+		}
+	}
+		
+	unsigned int best_common_parent = *min_element(intersection.begin(), intersection.end(), [&word1, &word2](auto el1, auto el2)
+	{
+		return (word1.hypernym_path.at(el1)+word2.hypernym_path.at(el1)) < (word1.hypernym_path.at(el2)+word2.hypernym_path.at(el2));
+	});
 	
 	return best_common_parent;
 }
