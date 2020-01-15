@@ -11,7 +11,7 @@
 
 using namespace std;
 using namespace Catch::Matchers;
-/*
+
 SCENARIO("Initialization")
 {
 	//Using 4 threads
@@ -62,11 +62,10 @@ SCENARIO("Initialization")
 			}
 		}
 	}
-}*/
+}
 
 SCENARIO("Execution")
 {
-	/*
 	GIVEN("A valid dataset and a valid set of starting medoids")
 	{
 		vector<int> corpus ({1, 2, 3, 4, 95, 96, 97, 98});
@@ -100,7 +99,8 @@ SCENARIO("Execution")
 		{
 			delete c;
 		}
-	}*/
+	}
+	
 	GIVEN("A valid dataset and an invalid set of starting medoids")
 	{
 		vector<int> corpus ({1, 2, 3, 4, 95, 96, 97, 98});

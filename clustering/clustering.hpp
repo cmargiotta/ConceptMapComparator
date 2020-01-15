@@ -95,8 +95,7 @@ class clustering
                     this->medoids_assignation[i] = min_medoid;
                 };
                 
-                //pool.commit(job);
-                job();
+                pool.commit(job);
             }
             
             //Waiting for the jobs to finish
@@ -112,7 +111,7 @@ class clustering
 			
             for (size_t i = 0; i < elements.size(); i++)
             {
-                cost += similarity_matrix[i][medoids_assignation[i]];
+				cost += distance(i, medoids_assignation[i]);
             }
             
             return cost;
@@ -128,6 +127,7 @@ class clustering
 				if (m == to_replace)
 				{
 					m = new_medoid;
+                    break;
 				}
 			}
 			
@@ -152,6 +152,7 @@ class clustering
 			{
 				medoids_assignation[i] = backup[i];
 			}
+            cost = old_cost;
 			
 			return false;
         }
@@ -159,14 +160,11 @@ class clustering
         bool select_new_random_medoid()
         {
             size_t random_index = distribution(generator);
-
-            if (check_new_medoid(random_index))
-            {
-                //Recomputing clusters
-                assign_medoids();
-                
-                return true;
-            }
+			
+			if (check_new_medoid(random_index))
+			{	
+				return true;
+			}
             
             return false;
         }
@@ -210,7 +208,7 @@ class clustering
             medoids_assignation(elements.size(), 0),
 			distance_lambda(dist), 
 			termination_condition(termination_cond),
-            distribution(0, elements.size())
+            distribution(0, elements.size()-1)
 		{
             if (medoids.size() == 0)
             {
