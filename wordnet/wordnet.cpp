@@ -155,7 +155,7 @@ void wordnet::hypernym_tree(synset& word)
 	build_tree(word.id, word.hypernym_path);
 }
 
-const std::vector<unsigned int>& wordnet::get_id(std::string& word)
+const std::vector<unsigned int>& wordnet::get_id(std::string word)
 {
 	return words[word];
 }
@@ -165,9 +165,14 @@ unsigned int wordnet::get_hyponym_count(unsigned int word)
 	return hyponyms[word].size();
 }
 
-unsigned int wordnet::get_concept_number()
+size_t wordnet::get_concept_number()
 {
 	return words.size();
+}
+
+unsigned int wordnet::get_entity_id()
+{
+	return entity_id;
 }
 
 synset::synset(unsigned int id)
@@ -178,4 +183,14 @@ synset::synset(unsigned int id)
 	hypernym_path[id] = 0;
 	
 	wb.hypernym_tree(*this);
+}
+
+synset::synset(const synset& other):
+	id(other.id), 
+	hypernym_path(other.hypernym_path.begin(), other.hypernym_path.end())
+{}
+
+bool synset::operator==(const synset& other) const
+{
+	return other.id == id;
 }

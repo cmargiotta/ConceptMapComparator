@@ -24,10 +24,10 @@ int main()
 		corpus[i] = i;
 	}
 	
-	function<float(short&, short&)> distance = [](short n1, short n2){return (float) abs((float) n1-n2);};
-	function<bool(std::vector<short>&, size_t, float)> termination_condition = [&corpus](std::vector<short>&, size_t, float average_distance)
+	function<float(const short&, const short&)> distance = [](const short& n1, const short& n2){return (float) abs((float) n1-n2);};
+	function<bool(std::vector<short>&, const short&)> termination_condition = [&corpus](std::vector<short>&, const short&)
 	{
-		return average_distance < corpus.size()/8.0f;
+		return true;
 	};
 	
 	clustering c (corpus, {0, 9999}, distance, termination_condition);
@@ -39,7 +39,6 @@ int main()
 	for (size_t i = 0; i < clusters.size(); i++)
 	{
 		cout << "Cluster " << i << "\n";
-		cout << "Average distance " << clusters[i].average_distance  << '\n';
 		cout << "Medoid " << clusters[i].elements[clusters[i].medoid] << " (index " << clusters[i].medoid << ")" <<'\n';
 		cout << "Elements:" << clusters[i].elements.size() << "\n\n";
 		

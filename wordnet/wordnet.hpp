@@ -14,6 +14,10 @@ struct synset
 	std::map <unsigned int, unsigned int> hypernym_path;
 	
 	synset(unsigned int id);
+	synset(const synset& other);
+	synset() {}
+	
+	bool operator==(const synset& other) const;
 };
 
 class wordnet
@@ -44,12 +48,13 @@ class wordnet
 		
 		~wordnet();
 		
-		void 			hypernym_tree(synset& word);
+		void 								hypernym_tree(synset& word);
 		
-		const 			std::vector<unsigned int>& get_id(std::string& word);
-		unsigned int 	get_hyponym_count(unsigned int word);
-		unsigned int 	get_concept_number();
-		std::string 	get_word(unsigned int id);
+		const std::vector<unsigned int>& 	get_id(std::string word);
+		unsigned int 						get_hyponym_count(unsigned int word);
+		unsigned int						get_entity_id();
+		size_t 								get_concept_number();
+		std::string 						get_word(unsigned int id);
 };
 
 #endif
