@@ -7,3 +7,6 @@
 [submodule "subprojects/wordnet-blast"]
 	path = subprojects/wordnet-blast
 	url = ../../jardon-u/wordnet-blast
+[submodule "subprojects/SQLiteCpp"]
+	path = subprojects/SQLiteCpp
+	url = ../../SRombauts/SQLiteCpp
