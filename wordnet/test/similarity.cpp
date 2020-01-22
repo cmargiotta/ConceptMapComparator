@@ -1,6 +1,7 @@
 #include <catch.hpp>
 
 #include <string>
+#include <iostream>
 
 #include <wordnet.hpp>
 #include <similarity.hpp>
@@ -11,14 +12,13 @@ SCENARIO("Comparing two words")
 {
 	GIVEN("Two totally different synsets")
 	{
-		wordnet& wn = wordnet::get_instance("../wordnet/dict");
+		wordnet& wn = wordnet::get_instance("../wordnet/dict/wordnet.db");
 		
 		string w1 ("dog");
 		string w2 ("heater");
 		
 		synset s1 (wn.get_id(w1)[0]);
 		synset s2 (wn.get_id(w2)[0]);
-		
 		
 		WHEN("The simimilarity between them is computed")
 		{
@@ -33,7 +33,7 @@ SCENARIO("Comparing two words")
 	
 	GIVEN("Two similar synsets")
 	{
-		wordnet& wn = wordnet::get_instance();
+		wordnet& wn = wordnet::get_instance("../wordnet/dict/wordnet.db");
 		
 		string w1 ("dog");
 		string w2 ("pug");
@@ -48,14 +48,14 @@ SCENARIO("Comparing two words")
 			
 			THEN("The similarity is high")
 			{
-				REQUIRE(s >= 0.7);
+				REQUIRE(s >= 0.65f);
 			}
 		}
 	}
 	
 	GIVEN("Two equal synsets")
 	{
-		wordnet& wn = wordnet::get_instance();
+		wordnet& wn = wordnet::get_instance("../wordnet/dict/wordnet.db");
 		
 		string w1 ("dog");
 		

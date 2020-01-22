@@ -8,12 +8,14 @@
 #include <set>
 #include <list>
 
+#include <SQLiteCpp/SQLiteCpp.h>
+
 struct synset
 {
-	unsigned int id;
-	std::map <unsigned int, unsigned int> hypernym_path;
+	std::string id;
+	std::map <std::string, size_t> hypernym_path;
 	
-	synset(unsigned int id);
+	synset(std::string id);
 	synset(const synset& other);
 	synset() {}
 	
@@ -23,24 +25,22 @@ struct synset
 class wordnet
 {
 	private:
-		std::ifstream										noun_index;
-		std::ifstream										noun_data;
+		SQLite::Database    								db;
+				
+		std::map<std::string, std::vector<std::string>>		words;
+		std::map<std::string, std::set<std::string>> 		hypernyms;
+		std::map<std::string, std::set<std::string>>		hyponyms;
 		
-		unsigned int										entity_id;
-		
-		std::map<std::string, std::vector<unsigned int>>	words;
-		std::map<unsigned int, std::set<unsigned int>> 		hypernyms;
-		std::map<unsigned int, std::set<unsigned int>>		hyponyms;
+		std::string											entity_id;
 		
 		//Private constructor
 		wordnet(const std::string& path);
 		
-		void add_hyponym(unsigned int start_id, unsigned int id=0);
-		void discard_copyright_disclaimer(std::ifstream& file);
-		void build_tree(unsigned int id, std::map <unsigned int, unsigned int>& t, unsigned int depth = 1);
+		void add_hyponym(const std::string& start_id, std::string id="");
+		void build_tree(const std::string& id, std::map <std::string, size_t>& t, size_t depth = 1);
 	public:
 		//Singleton instance
-		static wordnet& get_instance(const std::string& path = "wordnet/dict/")
+		static wordnet& get_instance(const std::string& path = "wordnet/dict/wordnet.db")
 		{
 			static wordnet wb (path);
 			return wb;
@@ -50,11 +50,11 @@ class wordnet
 		
 		void 								hypernym_tree(synset& word);
 		
-		const std::vector<unsigned int>& 	get_id(std::string word);
-		unsigned int 						get_hyponym_count(unsigned int word);
-		unsigned int						get_entity_id();
+		const std::vector<std::string>& 	get_id(std::string word);
+		size_t 								get_hyponym_count(std::string word);
+		std::string							get_entity_id();
 		size_t 								get_concept_number();
-		std::string 						get_word(unsigned int id);
+		std::string 						get_word(std::string id);
 };
 
 #endif

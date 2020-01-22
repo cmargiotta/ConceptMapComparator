@@ -5,8 +5,8 @@
 class similarity
 {
 	private:
-		static unsigned int LCS(const synset& word1, const synset& word2);
-		static float informative_content(unsigned int word);
+		static std::string LCS(const synset& word1, const synset& word2);
+		static float informative_content(std::string word);
 	public:
 		static float compare_words(const synset& word1, const synset& word2);
 };

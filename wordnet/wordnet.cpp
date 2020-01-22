@@ -5,29 +5,14 @@
 
 using namespace std;
 
+using std::cout;
+
 wordnet::~wordnet()
-{
-	noun_index.close();
-	noun_data.close();
-}
+{}
 
-void wordnet::discard_copyright_disclaimer(std::ifstream& file)
+void wordnet::add_hyponym(const string& start_id, string id)
 {
-	char buffer;
-	file.get(buffer);
-
-	while(buffer == ' ')
-	{
-		file.ignore(1024, '\n');
-		file.get(buffer);
-	}
-	
-	file.seekg(-1, file.cur);
-}
-
-void wordnet::add_hyponym(unsigned int start_id, unsigned int id)
-{
-	for (auto i: hypernyms[(id==0) ? start_id : id])
+	for (auto i: hypernyms[(id=="") ? start_id : id])
 	{
 		hyponyms[i].insert(start_id);
 		add_hyponym(start_id, i);
@@ -35,112 +20,66 @@ void wordnet::add_hyponym(unsigned int start_id, unsigned int id)
 }
 
 wordnet::wordnet(const std::string& path):
-	noun_index((path.back() == '/') ? (path + "index.noun") : (path + "/index.noun"), std::ifstream::binary),
-	noun_data((path.back() == '/') ? (path + "data.noun") : (path + "/data.noun"), std::ifstream::binary)
+	db(path)
 {
-	discard_copyright_disclaimer(noun_index);
-	discard_copyright_disclaimer(noun_data);
+	assert(db.tableExists("nouns"));
+	assert(db.tableExists("hypernyms"));
 	
-	//Reading entity ID
-	noun_data >> std::dec >> entity_id;
-	
-	std::string lemma, line, pointer_type;
-	char category;
-	unsigned short synset_count, pointers_kind_count, tagsense_count;
-	bool hypernym_present;
-	unsigned int id;
-	
-	
-	//Parsing data from index.noun
-	while (noun_index >> lemma)
+	SQLite::Statement   query1(db, "SELECT lemma, synset FROM nouns");
+	while (query1.executeStep())
 	{
-		hypernym_present = false;
-		noun_index >> category;
-		noun_index >> synset_count;
-		noun_index >> std::dec >> pointers_kind_count;
-		
-		for (size_t i = 0; i < pointers_kind_count; i++)
-		{
-			noun_index >> pointer_type;
-			if (pointer_type[0] == '@')
-			{
-				hypernym_present = true;
-			}
-		}
-		
-		noun_index >> std::dec >> synset_count;
-		noun_index >> tagsense_count;
-		
-		for (size_t i = 0; i < synset_count; i++)
-		{
-			noun_index >> id;
-			words[lemma].push_back(id);
-		}
-	}
-		
-	int buf;
-	unsigned short word_count, pointer_count;
-	std::string word;
-	//Parsing data from data.noun
-	for (std::pair<const std::string, std::vector<unsigned int>>& voice: words)
-	{
-		for (unsigned int syn_id: voice.second) 
-		{
-			noun_data.seekg(syn_id);
-			
-			noun_data >> line;
-			noun_data >> buf >> category;
-			noun_data >> std::hex >> word_count;
-			
-			for (size_t i = 0; i < word_count; i++)
-			{
-				noun_data >> word;
-				noun_data >> buf;
-			}
-			
-			noun_data >> std::dec >> pointer_count;
-
-			for (size_t i = 0; i < pointer_count; i++)
-			{
-				noun_data >> pointer_type;
-				noun_data >> std::dec >> id;
-				noun_data >> category;
-				noun_data >> std::hex >> buf;
-								
-				//We are interested only in hypernyms (nouns)
-				if (pointer_type[0] == '@' && category == 'n')
-				{
-					hypernyms[syn_id].insert(id);
-				}
-			}
-		}
+		const char* lemma  		= query1.getColumn(0);
+		const char* synset_id 	= query1.getColumn(1);
+				
+		words[lemma].push_back(synset_id);
 	}
 	
-	for (auto& i: words)
+	SQLite::Statement   query2(db, "SELECT * FROM hypernyms");
+	
+	while (query2.executeStep())
 	{
-		for (auto w: i.second)
+		const char* syn1 = query2.getColumn(0);
+		const char* syn2 = query2.getColumn(1);
+				
+		hypernyms[syn1].insert(syn2);
+		add_hyponym(syn1);
+	}
+	
+	entity_id = words["entity"][0];
+	
+	//Adding entity as hypernym of every node without hypernyms
+	for (auto& w: words)
+	{
+		for (auto& s: w.second)
 		{
-			add_hyponym(w);
+			if (hypernyms[s].size() == 0)
+			{
+				hypernyms[s].insert(entity_id);
+				hyponyms[entity_id].insert(s);
+			}
 		}
 	}
 }
 
-std::string wordnet::get_word(unsigned int id)
+std::string wordnet::get_word(string id)
 {
-	noun_data.seekg(id);
+	SQLite::Statement query(db, "SELECT lemma FROM nouns WHERE synset=?");
+	query.bind(1, id);
 	
-	std::string word;
-	noun_data >> word >> word >> word >> word >> word;
+	while (query.executeStep())
+    {
+		return std::string(query.getColumn(0));
+	}
 	
-	return word;
+	return "";
 }
 
-void wordnet::build_tree(unsigned int id, std::map<unsigned int, unsigned int>& t, unsigned int depth)
+void wordnet::build_tree(const string& id, std::map <string, size_t>& t, size_t depth)
 {
-	for (unsigned int child_id: hypernyms[id])
+	for (const string& child_id: hypernyms[id])
 	{
 		//Selecting min depth for every node 
-		unsigned int old_depth = t[child_id];
+		size_t old_depth = t[child_id];
 		t[child_id] = (old_depth != 0) ? min(old_depth, depth) : depth;
 		
 		if (child_id != entity_id)
@@ -155,27 +94,28 @@ void wordnet::hypernym_tree(synset& word)
 	build_tree(word.id, word.hypernym_path);
 }
 
-const std::vector<unsigned int>& wordnet::get_id(std::string word)
+const std::vector<std::string>& wordnet::get_id(std::string word)
 {
-	return words[word];
+	return words.at(word);
 }
 
-unsigned int wordnet::get_hyponym_count(unsigned int word)
+size_t wordnet::get_hyponym_count(string word)
 {
 	return hyponyms[word].size();
 }
 
 size_t wordnet::get_concept_number()
 {
-	return words.size();
+	//words.size() is not correct, for a synset we can have more than one word (probably one per language)
+	return hyponyms[entity_id].size();
 }
 
-unsigned int wordnet::get_entity_id()
+string wordnet::get_entity_id()
 {
 	return entity_id;
 }
 
-synset::synset(unsigned int id)
+synset::synset(string id)
 {
 	this->id = id;
 	wordnet& wb = wordnet::get_instance();
