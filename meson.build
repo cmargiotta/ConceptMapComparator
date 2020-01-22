@@ -13,6 +13,8 @@ cmake = import('cmake')
 cpp = meson.get_compiler('cpp')
 pthread_dep = cpp.find_library('pthread', required : true)
 
+sqlitecpp_dep  = declare_dependency(dependencies: [cmake.subproject('SQLiteCpp').dependency('SQLiteCpp'), cmake.subproject('SQLiteCpp').dependency('sqlite3')])
+
 catch2_main_lib = static_library(
     'catch2_main',
     ['catch_main.cpp'],
@@ -27,4 +29,5 @@ subdir('thread_pool')
 subdir('clustering')
 subdir('performance_tests')
 subdir('wordnet')
+subdir('concept_map')
 subdir('test')

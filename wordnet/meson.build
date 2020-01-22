@@ -4,12 +4,17 @@ wordnet_lib = static_library(
 		'wordnet.cpp', 
 		'similarity.cpp'
 	],
-	include_directories: ['.']
+	dependencies : [
+		sqlitecpp_dep
+    ]
 )
 
 wordnet_dep = declare_dependency(
-    include_directories : '.',
-    link_with: [wordnet_lib]
+    link_with : [wordnet_lib],
+    include_directories : ['.'],
+    dependencies: [
+		sqlitecpp_dep
+    ]
 )
 
 test_wordnet_sources = files([
