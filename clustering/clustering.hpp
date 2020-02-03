@@ -59,6 +59,12 @@ class clustering
         {
 			size_t i = std::min(el1, el2);
 			size_t j = std::max(el1, el2);
+			
+			//If i was not assigned to a cluster
+			if (j == elements.size() + 1)
+			{
+				return 1.0f;
+			}
 
 			//If it is not stored in the matrix, compute it
 			if (similarity_matrix[i][j] == -1.0f)
@@ -92,7 +98,14 @@ class clustering
                         }
                     }
                
-                    this->medoids_assignation[i] = min_medoid;
+					if (this->distance(i, min_medoid) > 0.9f)
+					{
+						this->medoids_assignation[i] = elements.size() + 1;
+					}
+					else
+					{
+						this->medoids_assignation[i] = min_medoid;
+					}
                 };
                 
                 pool.commit(job);
