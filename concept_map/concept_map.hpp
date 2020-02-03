@@ -14,14 +14,14 @@ class concept_map
 {
 	private:
 		std::map<std::string, std::vector<std::string>> 	adjancencies;
-		std::map<std::string, std::string>					id_to_map_word;
-		std::set<std::string> 								whole_map_corpus;
+		std::map<std::string, std::string>					id_to_word;
 		std::set<std::string> 								word_corpus;
 		std::vector<synset> 								synset_corpus;
 		std::string 										data;
 		
-		void build_corpus();
+		void add_to_corpus(const std::string& sentence);
 		void disambiguate();
+		void build_synsets();
 	
 	public:
 		concept_map(std::string  file_path);

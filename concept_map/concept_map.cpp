@@ -49,85 +49,77 @@ concept_map::concept_map(std::istream& input_stream)
 		//Saving relation
 		adjancencies[node1].push_back(node2);
 		
-		whole_map_corpus.insert(node1);
-		whole_map_corpus.insert(node2);
+		add_to_corpus(node1);
+		add_to_corpus(node2);
 	}
 	
-	build_corpus();
+	build_synsets();
 	disambiguate();
 }
 
-void concept_map::build_corpus()
+void concept_map::add_to_corpus(const string& sentence)
+{
+	stringstream stream (sentence);
+	string word;
+	std::locale loc;
+	
+	while(stream >> word)
+	{
+		for (char& c : word)
+		{
+			c = std::tolower(c, loc);
+		}
+		word_corpus.insert(word);
+	}
+}
+
+void concept_map::build_synsets()
 {
 	wordnet& wn = wordnet::get_instance();
-	synset_corpus.emplace_back(wn.get_entity_id());
 	
-	for (const string& node: whole_map_corpus)
+	for (const string& w: word_corpus)
 	{
-		stringstream stream (node);
-		string word;
-		std::locale loc;
-		
-		while(stream >> word)
+		try
 		{
-			try
+			for (const string& id: wn.get_id(w))
 			{
-				if (word_corpus.find(word) == word_corpus.end())
-				{
-					for(auto& c : word)
-					{
-						c = std::tolower(c, loc);
-					}
-					word_corpus.insert(word);
-					
-					for (const string& id: wn.get_id(word))
-					{
-						synset_corpus.emplace_back(id);
-						
-						id_to_map_word[id] = word;
-					}
-				}
-			} catch(...)
-			{
-				continue;
+				synset_corpus.emplace_back(id);
+				
+				id_to_word[id] = w;
 			}
+		} catch(...)
+		{
+			continue;
 		}
 	}
-	
-	cout << endl;
 }
 
 void concept_map::disambiguate()
 {
 	function <float(const synset&, const synset&)> dist = [](const synset& s1, const synset& s2)
 	{
-		wordnet& wn = wordnet::get_instance();
 		float sim = similarity::compare_words(s1, s2);
-							
+		
+		/*					
 		//Similarity threshold
-		if (s1.id != wn.get_entity_id() && s2.id != wn.get_entity_id() && sim <= 0.35f)
-			sim = 0.0f;
-		if ((s1.id == wn.get_entity_id() || s2.id != wn.get_entity_id()) && sim <= 0.35f)
-			sim = 0.35f;
+		if (s1.id != wn.get_entity_id() && s2.id != wn.get_entity_id() && sim <= 0.25f)
+			return 1.0f;
+		if ((s1.id == wn.get_entity_id() || s2.id == wn.get_entity_id()) && sim <= 0.25f)
+			return 0.75f;
+			*/
 					
 		return 1.0f - sim;
 	};
 	
 	function <bool(std::vector<synset>&, const synset&)> termination_condition = [this](std::vector<synset>& clust, const synset& center)
-    {
-		wordnet& wn = wordnet::get_instance();
-		
+    {		
 		map<string, size_t> counters;
 		size_t not_in_cluster = 0;
 		
-		cout << "Center " << wn.get_word(center.id) << endl;
 		for (synset& s: clust)
 		{
-			cout << wn.get_word(s.id) << "   " << similarity::compare_words(s, center) << endl;
-			counters[this->id_to_map_word[s.id]]++;
-		}
-		cout << endl;
-		
+			counters[this->id_to_word[s.id]]++;
+		}		
 		
 		for (const string& c: this->word_corpus)
 		{
@@ -136,21 +128,52 @@ void concept_map::disambiguate()
 				not_in_cluster++;
 			}
 		}
-		cout << (float) not_in_cluster/this->word_corpus.size() << endl << endl;
-		return (float) not_in_cluster/this->word_corpus.size() < 0.7f && center.id != wn.get_entity_id();
+		
+		//Removing duplicates
+		if ((float) not_in_cluster/this->word_corpus.size() < 0.85f)
+		{
+			map<string, pair<string, float>> data;
+			
+			for(const auto& el: clust)
+			{
+				float dist = similarity::compare_words(el, center);
+				string word = this->id_to_word[el.id];
+				try
+				{
+					float old_dist = data.at(word).second;
+					
+					if (old_dist < dist)
+					{
+						data[word].first = el.id;
+						data[word].second = dist;
+					}
+				} catch(...)
+				{
+					data[word].first  = el.id;
+					data[word].second = dist;
+				}
+			}
+			
+			for (const auto& el: data)
+			{
+				this->synset_corpus.push_back(el.second.first);
+			}
+
+			return true;
+		}
+		
+		return false;
 	};
 	
-	clustering c (synset_corpus, {0, 1, 2}, dist, termination_condition); 
-	c.find_clusters();
+	clustering c (synset_corpus, {0, 1, 2}, dist, termination_condition);
+	synset_corpus.clear(); 
+	c.find_clusters();	
 	
-	synset_corpus.clear();
-	
-	for(const auto& c: c.get_clusters()[0].elements)
+	for (const auto& el: synset_corpus)
 	{
-		synset_corpus.push_back(c);
-		cout << wordnet::get_instance().get_word(c.id) << endl;
+		this->synset_corpus.push_back(el.id);
+		cout << wordnet::get_instance().get_word(el.id) << "   " << el.id << endl;
 	}
-	
 	cout << endl;
 }
 
@@ -158,49 +181,24 @@ concept_map::~concept_map()
 {}
 
 float concept_map::similarity(const concept_map& other)
-{
-	//Discarding duplicated words
-	struct synsetcomp {
-		bool operator() (const synset& lhs, const synset& rhs) const
-		{return (lhs.id < rhs.id);}
-	};
-	set<synset, synsetcomp> corpus_set;
-	vector<bool> a, b;
-	float max = 0.0f;
-	float sim = 0.0f;
-	float dist;
+{	
+	size_t count = 0;
+	float score = 0.0f;
 	
-	for (auto& s: synset_corpus)
+	for (auto& s1: synset_corpus)
 	{
-		corpus_set.insert(s);
-	}
-	for (auto& s: other.synset_corpus)
-	{
-		corpus_set.insert(s);
-	}
-	
-	vector<synset> corpus (corpus_set.begin(), corpus_set.end());
-	
-	for (auto& s: corpus)
-	{
-		a.push_back(find(synset_corpus.begin(), synset_corpus.end(), s) != synset_corpus.end());
-		b.push_back(find(other.synset_corpus.begin(), other.synset_corpus.end(), s) != other.synset_corpus.end());
-	}
-	
-	for (size_t i = 0; i < corpus.size(); i++)
-	{
-		for (size_t j = 0; j < corpus.size(); j++)
+		float max = 0.0f;
+		for (auto& s2: other.synset_corpus)
 		{
-			dist = similarity::compare_words(corpus[i], corpus[j]);
-			dist = (dist <= 0.35f) ? 0.0f : dist;
-			
-			if (b[i])
+			float sim = similarity::compare_words(s1, s2);
+			if (sim > max)
 			{
-				sim += a[j]*dist;
-				max += a[j];
+				max = sim;
 			}
 		}
+		score += max;
+		count++;
 	}
-			
-	return sim/max;
+	
+	return score/count;
 }
