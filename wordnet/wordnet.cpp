@@ -2,6 +2,7 @@
 
 #include <utility>
 #include <iostream>
+#include <sstream>
 
 using namespace std;
 
@@ -59,6 +60,31 @@ wordnet::wordnet(const std::string& path):
 			}
 		}
 	}
+	
+	//Reading semfield hierarchy
+	SQLite::Statement   query3(db, "SELECT * FROM semfield_hierarchy");
+	while (query3.executeStep())
+	{
+		const char* field1 = query3.getColumn(1);
+		const char* field2 = query3.getColumn(3);
+				
+		semfield_hierarchy[field1].push_back(field2);
+	}
+	
+	//Reading semfields
+	SQLite::Statement   query4(db, "SELECT * FROM semfield");
+	while (query4.executeStep())
+	{
+		const char*  	field1 		 = query4.getColumn(0);
+		string  		field2 		   (query4.getColumn(1));
+		stringstream 	field_stream   (field2);
+		string 			field;
+		
+		while (field_stream >> field)
+		{
+			semfields[field1].push_back(field);
+		}
+	}
 }
 
 std::string wordnet::get_word(string id)
@@ -74,7 +100,7 @@ std::string wordnet::get_word(string id)
 	return "";
 }
 
-void wordnet::build_tree(const string& id, std::map <string, size_t>& t, size_t depth)
+void wordnet::build_tree(const string& id, map <string, size_t>& t, size_t depth)
 {
 	for (const string& child_id: hypernyms[id])
 	{
@@ -89,9 +115,35 @@ void wordnet::build_tree(const string& id, std::map <string, size_t>& t, size_t 
 	}
 }
 
+void wordnet::build_semfield_tree(const string& id, map <string, size_t>& t, size_t depth)
+{
+	for (const string& child_id: semfield_hierarchy[id])
+	{
+		//Selecting min depth for every node 
+		size_t old_depth = t[child_id];
+		t[child_id] = (old_depth != 0) ? min(old_depth, depth) : depth;
+		
+		build_tree(child_id, t, depth + 1);
+	}
+}
+
+void wordnet::build_semfield_tree(const string& id, map <string, size_t>& t)
+{
+	for (const string& semfield: semfields[id])
+	{		
+		t[semfield] = 1;
+		build_semfield_tree(semfield, t, 2);
+	}
+}
+
 void wordnet::hypernym_tree(synset& word)
 {
 	build_tree(word.id, word.hypernym_path);
+}
+
+void wordnet::semfield_tree(synset& word)
+{
+	build_semfield_tree(word.id, word.semfield_path);
 }
 
 const std::vector<std::string>& wordnet::get_id(std::string word)
@@ -118,11 +170,12 @@ string wordnet::get_entity_id()
 synset::synset(string id)
 {
 	this->id = id;
-	wordnet& wb = wordnet::get_instance();
+	wordnet& wn = wordnet::get_instance();
 	
 	hypernym_path[id] = 0;
 	
-	wb.hypernym_tree(*this);
+	wn.hypernym_tree(*this);
+	wn.semfield_tree(*this);
 }
 
 synset::synset(const synset& other):

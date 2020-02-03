@@ -34,16 +34,53 @@ string similarity::LCS(const synset& word1, const synset& word2)
 	return best_common_parent;
 }
 
+string similarity::nearest_common_semfield(const synset& word1, const synset& word2)
+{
+	std::set<string> intersection;
+	
+	for (const auto& sem1: word1.semfield_path)
+	{
+		for (const auto& sem2: word2.semfield_path)
+		{
+			if (sem1.first == sem2.first)
+			{
+				intersection.insert(sem1.first);
+			}
+		}
+	}
+	
+	if (intersection.size() == 0)
+	{
+		return "";
+	}
+		
+	string best_common_semfield = *min_element(intersection.begin(), intersection.end(), [&word1, &word2](auto el1, auto el2)
+	{
+		return (word1.semfield_path.at(el1)+word2.semfield_path.at(el1)) < (word1.semfield_path.at(el2)+word2.semfield_path.at(el2));
+	});
+	
+	return best_common_semfield;
+}
+
 float similarity::informative_content(string word)
 {
 	wordnet& wn = wordnet::get_instance();
 	
-	return 1.0f - log(wn.get_hyponym_count(word)+1.0f)/log(wn.get_concept_number());
+	return abs(1.0f - log(wn.get_hyponym_count(word)+1.0f)/log(wn.get_concept_number()));
 }
 
 float similarity::compare_words(const synset& word1, const synset& word2)
 {	
-	string lcs = LCS(word1, word2);
-	cout << wordnet::get_instance().get_word(lcs) << endl;
-	return (2.0f*informative_content(lcs))/(informative_content(word1.id) + informative_content(word2.id));
+	string lcs 		= LCS(word1, word2);
+	string semfield = nearest_common_semfield(word1, word2);
+	
+	float sim = 2.0f*informative_content(lcs)/(informative_content(word1.id) + informative_content(word2.id));
+	
+	if (semfield != "")
+	{
+		sim += 2.0f/(word1.semfield_path.at(semfield) + word2.semfield_path.at(semfield));
+		sim /= 2.0f;
+	}
+		
+	return sim;
 }

@@ -14,6 +14,7 @@ struct synset
 {
 	std::string id;
 	std::map <std::string, size_t> hypernym_path;
+	std::map <std::string, size_t> semfield_path;
 	
 	synset(std::string id);
 	synset(const synset& other);
@@ -28,6 +29,8 @@ class wordnet
 		SQLite::Database    								db;
 				
 		std::map<std::string, std::vector<std::string>>		words;
+		std::map<std::string, std::vector<std::string>>		semfields;
+		std::map<std::string, std::vector<std::string>> 	semfield_hierarchy;
 		std::map<std::string, std::set<std::string>> 		hypernyms;
 		std::map<std::string, std::set<std::string>>		hyponyms;
 		
@@ -38,6 +41,8 @@ class wordnet
 		
 		void add_hyponym(const std::string& start_id, std::string id="");
 		void build_tree(const std::string& id, std::map <std::string, size_t>& t, size_t depth = 1);
+		void build_semfield_tree(const std::string& id, std::map <std::string, size_t>& t, size_t depth);
+		void build_semfield_tree(const std::string& id, std::map <std::string, size_t>& t);
 	public:
 		//Singleton instance
 		static wordnet& get_instance(const std::string& path = "wordnet/dict/wordnet.db")
@@ -49,12 +54,14 @@ class wordnet
 		~wordnet();
 		
 		void 								hypernym_tree(synset& word);
+		void 								semfield_tree(synset& word);
 		
 		const std::vector<std::string>& 	get_id(std::string word);
 		size_t 								get_hyponym_count(std::string word);
 		std::string							get_entity_id();
 		size_t 								get_concept_number();
 		std::string 						get_word(std::string id);
+		std::string 						get_semfield(std::string id);
 };
 
 #endif
