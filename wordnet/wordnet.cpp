@@ -8,6 +8,34 @@ using namespace std;
 
 using std::cout;
 
+/*** SYNSET STRUCT ***/
+
+synset::synset(const std::string& id) 
+{
+	auto& wn = wordnet::get_instance();
+	
+	this->id = id;
+	hyponym_count = wn.hyponyms[id].size();
+	hypernym_path[id] = 0;
+	
+	wn.hypernym_tree(*this);
+	wn.semfield_tree(*this);
+}
+
+synset::synset(const synset& other):
+	id(other.id), 
+	hypernym_path(other.hypernym_path.begin(), other.hypernym_path.end()),
+	semfield_path(other.semfield_path.begin(), other.semfield_path.end()),
+	hyponym_count(other.hyponym_count)
+{}
+
+bool synset::operator==(const synset& other) const
+{
+	return other.id == id;
+}
+
+/*********************/
+
 wordnet::~wordnet()
 {}
 
@@ -146,14 +174,18 @@ void wordnet::semfield_tree(synset& word)
 	build_semfield_tree(word.id, word.semfield_path);
 }
 
-const std::vector<std::string>& wordnet::get_id(std::string word)
+std::vector<synset> wordnet::get_synsets(std::string word)
 {
-	return words.at(word);
-}
+	std::vector<synset> synsets;
+	auto ids =  words.at(word);
+	synsets.reserve(ids.size());
 
-size_t wordnet::get_hyponym_count(string word)
-{
-	return hyponyms[word].size();
+	for (auto& id: ids)
+	{
+		synsets.emplace_back(id);
+	}
+
+	return synsets;
 }
 
 size_t wordnet::get_concept_number()
@@ -165,25 +197,4 @@ size_t wordnet::get_concept_number()
 string wordnet::get_entity_id()
 {
 	return entity_id;
-}
-
-synset::synset(string id)
-{
-	this->id = id;
-	wordnet& wn = wordnet::get_instance();
-	
-	hypernym_path[id] = 0;
-	
-	wn.hypernym_tree(*this);
-	wn.semfield_tree(*this);
-}
-
-synset::synset(const synset& other):
-	id(other.id), 
-	hypernym_path(other.hypernym_path.begin(), other.hypernym_path.end())
-{}
-
-bool synset::operator==(const synset& other) const
-{
-	return other.id == id;
 }

@@ -22,42 +22,40 @@ SCENARIO("Clustering a set of words")
 		//Using 4 threads
 		thread_pool::get_instance(4);
 		wordnet& wn = wordnet::get_instance("../wordnet/dict/wordnet.db");
+		std::vector<synset> buffer;
 		
 		vector<synset> corpus;
 		//Adding "entity" is useful for clustering unrelated synsets
 		corpus.emplace_back(wn.get_entity_id());
-		for_each(wn.get_id("hamster").begin(), wn.get_id("hamster").end(), [&corpus](auto& el){corpus.emplace_back(el);});
-		for_each(wn.get_id("perro").begin(), wn.get_id("perro").end(), [&corpus](auto& el){corpus.emplace_back(el);});
-		for_each(wn.get_id("sorcio").begin(), wn.get_id("sorcio").end(), [&corpus](auto& el){corpus.emplace_back(el);});
+		buffer = wn.get_synsets("hamster");
+		for_each(buffer.begin(), buffer.end(), [&corpus](auto& el){corpus.emplace_back(el);});
+		buffer = wn.get_synsets("dog");
+		for_each(buffer.begin(), buffer.end(), [&corpus](auto& el){corpus.emplace_back(el);});
+		buffer = wn.get_synsets("goldfish");
+		for_each(buffer.begin(), buffer.end(), [&corpus](auto& el){corpus.emplace_back(el);});
 		
 		function <float(const synset&, const synset&)> dist ([](const synset& s1, const synset& s2)
 		{
-			wordnet& wn = wordnet::get_instance();
 			float sim = similarity::compare_words(s1, s2);
-						
-			//Similarity threshold
-			if ((s1.id != wn.get_entity_id() && s2.id != wn.get_entity_id()) && sim <= 0.3f)
-				sim = 0.0f;
-			if ((s1.id == wn.get_entity_id() || s2.id != wn.get_entity_id()) && sim <= 0.3f)
-			sim = 0.3f;
 			
 			return 1.0f - sim;
 		});
 		
-        function <bool(std::vector<synset>&, const synset&)> termination_condition ([&dist](std::vector<synset>& clust, const synset& center)
+        function <bool(std::vector<synset>&, const synset&)> termination_condition ([](std::vector<synset>& clust, const synset&)
         {
 			wordnet& wn = wordnet::get_instance();
 			bool found1 = false, found2 = false, found3 = false;
 			
 			for (auto& s: clust)
 			{
+				cout << wn.get_word(s.id) << endl;
 				if (wn.get_word(s.id) == "entity")
 					return false;
 				if (wn.get_word(s.id) == "hamster")
 					found1 = true;
 				if (wn.get_word(s.id) == "dog")
 					found2 = true;
-				if (wn.get_word(s.id) == "mouse")
+				if (wn.get_word(s.id) == "goldfish")
 					found3 = true;
 			}
 			
@@ -73,9 +71,9 @@ SCENARIO("Clustering a set of words")
 			
 			for(auto c: clusters[0].elements) cout << wn.get_word(c.id) << "  " << c.id << endl;
 			
-			REQUIRE((find(clusters[0].elements.begin(), clusters[0].elements.end(), synset(wn.get_id("hamster")[0])) != clusters[0].elements.end()));
-			REQUIRE((find(clusters[0].elements.begin(), clusters[0].elements.end(), synset(wn.get_id("dog")[0])) != clusters[0].elements.end()));
-			REQUIRE((find(clusters[0].elements.begin(), clusters[0].elements.end(), synset(wn.get_id("topo")[0])) != clusters[0].elements.end()));
+			REQUIRE((find(clusters[0].elements.begin(), clusters[0].elements.end(), wn.get_synsets("hamster")[0]) != clusters[0].elements.end()));
+			REQUIRE((find(clusters[0].elements.begin(), clusters[0].elements.end(), wn.get_synsets("dog")[0]) != clusters[0].elements.end()));
+			REQUIRE((find(clusters[0].elements.begin(), clusters[0].elements.end(), wn.get_synsets("goldfish")[0]) != clusters[0].elements.end()));
 		}
 	}
 }

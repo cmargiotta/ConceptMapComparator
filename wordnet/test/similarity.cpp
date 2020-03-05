@@ -17,9 +17,9 @@ SCENARIO("Comparing two words")
 		string w1 ("dog");
 		string w2 ("heater");
 		
-		synset s1 (wn.get_id(w1)[0]);
-		synset s2 (wn.get_id(w2)[0]);
-		
+		synset s1 (wn.get_synsets(w1)[0]);
+		synset s2 = wn.get_synsets(w2)[0];
+				
 		WHEN("The simimilarity between them is computed")
 		{
 			float s = similarity::compare_words(s1, s2);
@@ -38,8 +38,8 @@ SCENARIO("Comparing two words")
 		string w1 ("dog");
 		string w2 ("pug");
 		
-		synset s1 (wn.get_id(w1)[0]);
-		synset s2 (wn.get_id(w2)[0]);
+		synset s1 = wn.get_synsets(w1)[0];
+		synset s2 = wn.get_synsets(w2)[0];
 		
 		
 		WHEN("The simimilarity between them is computed")
@@ -59,7 +59,7 @@ SCENARIO("Comparing two words")
 		
 		string w1 ("dog");
 		
-		synset s1 (wn.get_id(w1)[0]);
+		synset s1 = wn.get_synsets(w1)[0];
 		
 		WHEN("The simimilarity between them is computed")
 		{

@@ -81,11 +81,11 @@ void concept_map::build_synsets()
 	{
 		try
 		{
-			for (const string& id: wn.get_id(w))
+			for (const auto& syn: wn.get_synsets(w))
 			{
-				synset_corpus.emplace_back(id);
+				synset_corpus.emplace_back(syn);
 				
-				id_to_word[id] = w;
+				id_to_word[syn.id] = w;
 			}
 		} catch(...)
 		{

@@ -72,7 +72,7 @@ SCENARIO("Execution")
 		vector<size_t> medoids({2, 6});
 		
 		function<float(const int&, const int&)> dist  = [](const int& x, const int& y){return abs((float)x-(float)y);};
-		function<bool(vector<int>&, const int&)> term = [](vector<int>& c, const int&){return true;};
+		function<bool(vector<int>&, const int&)> term = [](vector<int>&, const int&){return true;};
 		
 		clustering<int> *c = nullptr;
 		
@@ -113,6 +113,7 @@ SCENARIO("Execution")
 				if (abs(i - m) > 10)
 					return false;
 			}
+			cout << endl;
 			
 			return c.size() == 4;
 		};

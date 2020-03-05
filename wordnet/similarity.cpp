@@ -11,7 +11,7 @@
 
 using namespace std;
 
-string similarity::LCS(const synset& word1, const synset& word2)
+synset similarity::LCS(const synset& word1, const synset& word2)
 {
 	std::set<string> intersection;
 	
@@ -31,7 +31,7 @@ string similarity::LCS(const synset& word1, const synset& word2)
 		return (word1.hypernym_path.at(el1)+word2.hypernym_path.at(el1)) < (word1.hypernym_path.at(el2)+word2.hypernym_path.at(el2));
 	});
 	
-	return best_common_parent;
+	return synset(best_common_parent);
 }
 
 string similarity::nearest_common_semfield(const synset& word1, const synset& word2)
@@ -62,19 +62,19 @@ string similarity::nearest_common_semfield(const synset& word1, const synset& wo
 	return best_common_semfield;
 }
 
-float similarity::informative_content(string word)
+float similarity::informative_content(const synset& word)
 {
 	wordnet& wn = wordnet::get_instance();
 	
-	return abs(1.0f - log(wn.get_hyponym_count(word)+1.0f)/log(wn.get_concept_number()));
+	return abs(1.0f - log(word.hyponym_count+1.0f)/log(wn.get_concept_number()));
 }
 
 float similarity::compare_words(const synset& word1, const synset& word2)
 {	
-	string lcs 		= LCS(word1, word2);
+	synset lcs 		= LCS(word1, word2);
 	string semfield = nearest_common_semfield(word1, word2);
 	
-	float sim = 2.0f*informative_content(lcs)/(informative_content(word1.id) + informative_content(word2.id));
+	float sim = 2.0f*informative_content(lcs)/(informative_content(word1) + informative_content(word2));
 	
 	if (semfield != "")
 	{
