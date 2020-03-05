@@ -34,17 +34,18 @@ class wordnet
 		std::map<std::string, std::vector<std::string>> semfields;
 		std::map<std::string, std::vector<std::string>> semfield_hierarchy;
 		std::map<std::string, std::set<std::string>> hypernyms;
-		std::map<std::string, std::set<std::string>> hyponyms;
+		std::map<std::string, size_t> hyponyms_number;
 
 		std::string entity_id;
+		size_t concept_number;
 
 		//Private constructor
 		wordnet(const std::string& path);
 
-		void add_hyponym(const std::string& start_id, std::string id="");
 		void build_tree(const std::string& id, std::map <std::string, size_t>& t, size_t depth = 1);
 		void build_semfield_tree(const std::string& id, std::map <std::string, size_t>& t, size_t depth);
 		void build_semfield_tree(const std::string& id, std::map <std::string, size_t>& t);
+		size_t get_hyponyms_number(const std::string& word_id);
 	public:
 		//Singleton instance
 		static wordnet& get_instance(const std::string& path = "wordnet/dict/wordnet.db")
@@ -62,7 +63,9 @@ class wordnet
 		std::string get_entity_id();
 		size_t get_concept_number();
 		std::string get_word(std::string id);
-		std::string get_semfield(std::string id);
+		
+		const std::set<std::string>& get_hypernyms(const std::string& word_id);
+		const std::vector<std::string>& get_semfields(const std::string& word_id);
 };
 
 #endif

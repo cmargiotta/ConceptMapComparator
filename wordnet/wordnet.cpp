@@ -4,6 +4,8 @@
 #include <iostream>
 #include <sstream>
 
+#include "db_initializer.hpp"
+
 using namespace std;
 
 using std::cout;
@@ -15,10 +17,11 @@ synset::synset(const std::string& id)
 	auto& wn = wordnet::get_instance();
 	
 	this->id = id;
-	hyponym_count = wn.hyponyms[id].size();
+	hyponym_count = wn.get_hyponyms_number(id);
 	hypernym_path[id] = 0;
 	
 	wn.hypernym_tree(*this);
+		
 	wn.semfield_tree(*this);
 }
 
@@ -39,80 +42,36 @@ bool synset::operator==(const synset& other) const
 wordnet::~wordnet()
 {}
 
-void wordnet::add_hyponym(const string& start_id, string id)
-{
-	for (auto i: hypernyms[(id=="") ? start_id : id])
-	{
-		hyponyms[i].insert(start_id);
-		add_hyponym(start_id, i);
-	}
-}
-
 wordnet::wordnet(const std::string& path):
-	db(path)
+	db(path, SQLite::OPEN_READWRITE|SQLite::OPEN_CREATE)
 {
 	assert(db.tableExists("nouns"));
 	assert(db.tableExists("hypernyms"));
 	
-	SQLite::Statement   query1(db, "SELECT lemma, synset FROM nouns");
-	while (query1.executeStep())
+	if (!db.tableExists("hyponyms_count"))
 	{
-		const char* lemma  		= query1.getColumn(0);
-		const char* synset_id 	= query1.getColumn(1);
-				
-		words[lemma].push_back(synset_id);
-	}
-	
-	SQLite::Statement   query2(db, "SELECT * FROM hypernyms");
-	
-	while (query2.executeStep())
-	{
-		const char* syn1 = query2.getColumn(0);
-		const char* syn2 = query2.getColumn(1);
-				
-		hypernyms[syn1].insert(syn2);
-		add_hyponym(syn1);
-	}
-	
-	entity_id = words["entity"][0];
-	
-	//Adding entity as hypernym of every node without hypernyms
-	for (auto& w: words)
-	{
-		for (auto& s: w.second)
-		{
-			if (hypernyms[s].size() == 0)
-			{
-				hypernyms[s].insert(entity_id);
-				hyponyms[entity_id].insert(s);
-			}
-		}
+		db_initializer(db);
 	}
 	
 	//Reading semfield hierarchy
-	SQLite::Statement   query3(db, "SELECT * FROM semfield_hierarchy");
-	while (query3.executeStep())
+	SQLite::Statement   query1(db, "SELECT * FROM semfield_hierarchy");
+	while (query1.executeStep())
 	{
-		const char* field1 = query3.getColumn(1);
-		const char* field2 = query3.getColumn(3);
+		const char* field1 = query1.getColumn(1);
+		const char* field2 = query1.getColumn(3);
 				
 		semfield_hierarchy[field1].push_back(field2);
 	}
 	
-	//Reading semfields
-	SQLite::Statement   query4(db, "SELECT * FROM semfield");
-	while (query4.executeStep())
+	SQLite::Statement   query2(db, "SELECT * FROM entity_id");
+	while (query2.executeStep())
 	{
-		const char*  	field1 		 = query4.getColumn(0);
-		string  		field2 		   (query4.getColumn(1));
-		stringstream 	field_stream   (field2);
-		string 			field;
-		
-		while (field_stream >> field)
-		{
-			semfields[field1].push_back(field);
-		}
+		const char* field1 = query2.getColumn(0);
+				
+		entity_id = field1;
 	}
+	
+	concept_number = get_hyponyms_number(entity_id);
 }
 
 std::string wordnet::get_word(string id)
@@ -130,7 +89,7 @@ std::string wordnet::get_word(string id)
 
 void wordnet::build_tree(const string& id, map <string, size_t>& t, size_t depth)
 {
-	for (const string& child_id: hypernyms[id])
+	for (const string& child_id: get_hypernyms(id))
 	{
 		//Selecting min depth for every node 
 		size_t old_depth = t[child_id];
@@ -157,7 +116,7 @@ void wordnet::build_semfield_tree(const string& id, map <string, size_t>& t, siz
 
 void wordnet::build_semfield_tree(const string& id, map <string, size_t>& t)
 {
-	for (const string& semfield: semfields[id])
+	for (const string& semfield: get_semfields(id))
 	{		
 		t[semfield] = 1;
 		build_semfield_tree(semfield, t, 2);
@@ -177,10 +136,25 @@ void wordnet::semfield_tree(synset& word)
 std::vector<synset> wordnet::get_synsets(std::string word)
 {
 	std::vector<synset> synsets;
-	auto ids =  words.at(word);
-	synsets.reserve(ids.size());
+	
+	try
+	{
+		words.at(word);
+	}
+	catch(...)
+	{
+		SQLite::Statement query(db, "SELECT * FROM nouns WHERE lemma=?");
+		query.bind(1, word);
+		
+		while (query.executeStep())
+		{
+			words[word].push_back(query.getColumn(1));
+		}
+	}
+	
+	synsets.reserve(words[word].size());
 
-	for (auto& id: ids)
+	for (auto& id: words[word])
 	{
 		synsets.emplace_back(id);
 	}
@@ -191,10 +165,67 @@ std::vector<synset> wordnet::get_synsets(std::string word)
 size_t wordnet::get_concept_number()
 {
 	//words.size() is not correct, for a synset we can have more than one word (probably one per language)
-	return hyponyms[entity_id].size();
+	return concept_number;
 }
 
 string wordnet::get_entity_id()
 {
 	return entity_id;
+}
+
+const std::set<std::string>& wordnet::get_hypernyms(const std::string& word_id)
+{
+	try
+	{
+		return hypernyms.at(word_id);
+	} catch(...)
+	{
+		SQLite::Statement query(db, "SELECT * FROM hypernyms WHERE id_source=?");
+		query.bind(1, word_id);
+		
+		while (query.executeStep())
+		{
+			hypernyms[word_id].insert(query.getColumn(1));
+		}
+		
+		return hypernyms[word_id];
+	}
+}
+
+const std::vector<std::string>& wordnet::get_semfields(const std::string& word_id)
+{
+	try
+	{
+		return semfields.at(word_id);
+	} catch(...)
+	{
+		SQLite::Statement query(db, "SELECT * FROM semfields WHERE word_id=?");
+		query.bind(1, word_id);
+		
+		while (query.executeStep())
+		{
+			semfields[word_id].push_back(query.getColumn(1));
+		}
+		
+		return semfields[word_id];
+	}
+}
+
+size_t wordnet::get_hyponyms_number(const std::string& word_id)
+{
+	try
+	{
+		return hyponyms_number.at(word_id);
+	} catch(...)
+	{
+		SQLite::Statement query(db, "SELECT count FROM hyponyms_count WHERE word_id=?");
+		query.bind(1, word_id);
+		
+		while (query.executeStep())
+		{
+			hyponyms_number[word_id] = atol(query.getColumn(0));
+		}
+		
+		return hyponyms_number[word_id];
+	}
 }
