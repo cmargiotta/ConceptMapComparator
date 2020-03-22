@@ -18,7 +18,7 @@ SCENARIO("Comparing two words")
 		string w2 ("heater");
 		
 		synset s1 (wn.get_synsets(w1)[0]);
-		synset s2 = wn.get_synsets(w2)[0];
+		synset s2 (wn.get_synsets(w2)[0]);
 				
 		WHEN("The simimilarity between them is computed")
 		{
@@ -26,7 +26,7 @@ SCENARIO("Comparing two words")
 			
 			THEN("The similarity is low")
 			{
-				REQUIRE(s <= 0.3);
+				REQUIRE(s <= 0.1f);
 			}
 		}
 	}
@@ -48,7 +48,7 @@ SCENARIO("Comparing two words")
 			
 			THEN("The similarity is high")
 			{
-				REQUIRE(s >= 0.65f);
+				REQUIRE(s >= 0.8f);
 			}
 		}
 	}
