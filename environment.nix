@@ -6,8 +6,6 @@
 		meson
 		ninja
 		cmake
-		wordnet
-		boost
 		gcc
 	];
 }
