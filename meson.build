@@ -10,9 +10,13 @@ project('ConceptMapComparator',
 
 cmake = import('cmake')
 
-cpp = meson.get_compiler('cpp')
+cpp 		= meson.get_compiler('cpp')
+c 			= meson.get_compiler('c')
+
 pthread_dep = cpp.find_library('pthread', required : true)
-dl_dep = cpp.find_library('dl', required : true)
+dl_dep 		= cpp.find_library('dl', required : true)
+
+cpr_dep = cmake.subproject('cpr', cmake_options : '-DCMAKE_USE_OPENSSL=OFF -DUSE_SYSTEM_CURL=ON').dependency('cpr')
 
 sqlitecpp_dep  = declare_dependency(dependencies:  [cmake.subproject('SQLiteCpp').dependency('SQLiteCpp'), 
 													cmake.subproject('SQLiteCpp').dependency('sqlite3'), 
