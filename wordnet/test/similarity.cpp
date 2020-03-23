@@ -10,7 +10,7 @@ using namespace std;
 
 SCENARIO("Comparing two words")
 {
-	GIVEN("Two totally different synsets")
+	GIVEN("Two totally different words")
 	{
 		wordnet& wn = wordnet::get_instance("../wordnet/dict/wordnet.db");
 		
@@ -31,7 +31,7 @@ SCENARIO("Comparing two words")
 		}
 	}
 	
-	GIVEN("Two similar synsets")
+	GIVEN("Two similar words")
 	{
 		wordnet& wn = wordnet::get_instance("../wordnet/dict/wordnet.db");
 		
@@ -53,7 +53,7 @@ SCENARIO("Comparing two words")
 		}
 	}
 	
-	GIVEN("Two equal synsets")
+	GIVEN("Two equal words")
 	{
 		wordnet& wn = wordnet::get_instance("../wordnet/dict/wordnet.db");
 		
@@ -68,6 +68,27 @@ SCENARIO("Comparing two words")
 			THEN("The similarity is 1")
 			{
 				REQUIRE(s == 1);
+			}
+		}
+	}
+	
+	GIVEN("Two words only in the same category (like lawyer and tribunal)")
+	{
+		wordnet& wn = wordnet::get_instance("../wordnet/dict/wordnet.db");
+		
+		string w1 ("lawyer");
+		string w2 ("tribunal");
+		
+		synset s1 = wn.get_synsets(w1)[0];
+		synset s2 = wn.get_synsets(w2)[0];
+		
+		WHEN("The similarity between them is computed")
+		{
+			float s = similarity::compare_words(s1, s2);
+			
+			THEN("The similarity is not low")
+			{
+				REQUIRE(s >= 0.5);
 			}
 		}
 	}

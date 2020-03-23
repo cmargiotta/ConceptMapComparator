@@ -74,15 +74,13 @@ float similarity::compare_words(const synset& word1, const synset& word2)
 	synset lcs 		= LCS(word1, word2);
 
 	string semfield = nearest_common_semfield(word1, word2);
-	
-	cout << informative_content(lcs) << "   " << lcs.id << endl;
-	
+		
 	float sim = 2.0f*informative_content(lcs)/(informative_content(word1) + informative_content(word2));
-	
+
 	if (semfield != "")
 	{
-		sim += 2.0f/(word1.semfield_path.at(semfield) + word2.semfield_path.at(semfield));
-		sim /= 2.0f;
+		sim *= 0.5f;
+		sim += 1.0f/(word1.semfield_path.at(semfield) + word2.semfield_path.at(semfield));
 	}
 		
 	return sim;
