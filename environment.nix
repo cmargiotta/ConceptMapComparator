@@ -7,5 +7,6 @@
 		ninja
 		cmake
 		gcc
+		curlFull.dev
 	];
 }
