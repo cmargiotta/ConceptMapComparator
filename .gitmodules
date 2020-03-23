@@ -10,3 +10,6 @@
 [submodule "subprojects/SQLiteCpp"]
 	path = subprojects/SQLiteCpp
 	url = ../../SRombauts/SQLiteCpp
+[submodule "subprojects/cpr"]
+	path = subprojects/cpr
+	url = ../../whoshuu/cpr.git
