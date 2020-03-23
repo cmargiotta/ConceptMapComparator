@@ -80,7 +80,7 @@ class clustering
                 std::function <void()> job = [this, i]()
                 {
                     float min = std::numeric_limits<float>::max(), tmp;
-                    size_t min_medoid;
+                    size_t min_medoid = this->medoids[0];
                     
                     for (size_t m: this->medoids)
                     {
