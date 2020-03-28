@@ -30,10 +30,10 @@ catch2_dep = declare_dependency(
     link_with: [catch2_main_lib]
 )
 
+subdir('utilities')
 subdir('thread_pool')
 subdir('clustering')
 subdir('performance_tests')
 subdir('wordnet')
 subdir('concept_map')
 subdir('test')
-subdir('utilities')

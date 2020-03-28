@@ -15,6 +15,8 @@ SCENARIO("Plural words to singular")
 	GIVEN("A set of plural words")
 	{
 		vector<string> plurals = {
+			"dogs",
+			"pugs",
 			"stars",
 			"buses",
 			"fish",
@@ -65,6 +67,8 @@ SCENARIO("Plural words to singular")
 		};
 		
 		vector<string> singulars = {
+			"dog",
+			"pug",
 			"star",
 			"bus",
 			"fish",

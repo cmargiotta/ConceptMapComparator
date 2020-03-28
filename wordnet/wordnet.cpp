@@ -150,6 +150,8 @@ std::vector<synset> wordnet::get_synsets(std::string word)
 		{
 			words[word].push_back(query.getColumn(1));
 		}
+		
+		words.at(word);
 	}
 	
 	synsets.reserve(words[word].size());

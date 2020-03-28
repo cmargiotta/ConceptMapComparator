@@ -11,6 +11,7 @@
 #include <similarity.hpp>
 #include <wordnet.hpp>
 #include <clustering.hpp>
+#include <word.hpp>
 
 using std::ifstream;
 using std::string;
@@ -75,13 +76,11 @@ void concept_map::add_to_corpus(const string& sentence)
 
 void concept_map::build_synsets()
 {
-	wordnet& wn = wordnet::get_instance();
-	
 	for (const string& w: word_corpus)
 	{
 		try
 		{
-			for (const auto& syn: wn.get_synsets(w))
+			for (const auto& syn: get_synsets(w))
 			{
 				synset_corpus.emplace_back(syn);
 				
