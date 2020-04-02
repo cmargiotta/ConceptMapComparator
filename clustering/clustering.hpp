@@ -20,11 +20,13 @@ using std::endl;
 template <typename T>
 struct cluster
 {
-    std::vector<T> elements;
+    std::vector<T> 		elements;
+    std::vector<float> 	distances;
     T medoid;
     
-    cluster(const std::vector<T>& el, const T& med):
+    cluster(const std::vector<T>& el, const T& med, const std::vector<float>& dist):
         elements(el.begin(), el.end()),
+        distances(dist.begin(), dist.end()),
         medoid(med)
     {}
 };
@@ -48,9 +50,6 @@ class clustering
         float                					cost;
 		
 		std::function <float(const T&, const T&)>			distance_lambda;
-        //If a cluster satisfies this predicate, the algorithm ends
-        //(cluster, medoid index, average distance)
-		std::function <bool(std::vector<T>&, const T&)>   	termination_condition;
         
         //Random number generator
         std::default_random_engine              generator;
@@ -170,27 +169,28 @@ class clustering
             return false;
         }
         
-        bool check_termination_condition()
+        bool assign_clusters()
         {
             std::vector<T> clust;
+            std::vector<float> dist;
             //Every cluster, on average, has elements/clusters objects
-            clust.resize(elements.size()/medoids.size());
+            clust.reserve(elements.size()/medoids.size());
+            dist.reserve(elements.size()/medoids.size());
             
             for (size_t medoid_index: medoids)
             {
+				dist.clear();
                 clust.clear();
                 for (size_t i = 0; i < elements.size(); i++)
                 {
                     if (medoids_assignation[i] == medoid_index)
                     {
+						dist.push_back(distance(medoid_index, i));
                         clust.push_back(elements[i]);
                     }
                 }
                 
-                if (termination_condition(clust, elements[medoid_index]))
-                {
-                    valid_clusters.emplace_back(clust, elements[medoid_index]);
-                }
+                valid_clusters.emplace_back(clust, elements[medoid_index], dist);
             }
             
             return valid_clusters.size() != 0;
@@ -200,15 +200,13 @@ class clustering
 		//Constructor
 		clustering( const std::vector<T>& corpus, 
                     const std::vector<size_t>& starting_medoids, 
-                    std::function <float(const T&, const T&)>& dist, 
-                    std::function <bool(std::vector<T>&, const T&)>& termination_cond
+                    std::function <float(const T&, const T&)>& dist 
                   ):
             elements(corpus.begin(), corpus.end()),
 			medoids(starting_medoids.begin(), starting_medoids.end()), 
 			similarity_matrix(elements.size(), std::vector<float>(elements.size(), -1.0f)),
             medoids_assignation(elements.size(), 0),
 			distance_lambda(dist), 
-			termination_condition(termination_cond),
             distribution(0, elements.size()-1)
 		{
             if (medoids.size() == 0)
@@ -230,6 +228,39 @@ class clustering
             }
 		}
 		
+		//Constructor with random medoids
+		clustering( const std::vector<T>& corpus, 
+                    size_t medoids_number, 
+                    std::function <float(const T&, const T&)>& dist 
+                  ):
+            elements(corpus.begin(), corpus.end()),
+			similarity_matrix(elements.size(), std::vector<float>(elements.size(), -1.0f)),
+            medoids_assignation(elements.size(), 0),
+			distance_lambda(dist), 
+            distribution(0, elements.size()-1)
+		{
+            if (elements.size() == 0)
+            {
+                throw std::runtime_error("Empty corpus.");
+            }
+            
+            medoids.reserve(medoids_number);
+            for (size_t i = 0; i < medoids_number; i++)
+            {
+				medoids.push_back(distribution(generator));
+			}
+            
+            if (!std::all_of(medoids.begin(), 
+                             medoids.end(), 
+                             [this](size_t el){
+                                    return el < this->elements.size();
+                             })
+                )
+            {
+                throw std::runtime_error("Every medoid has to be part of the corpus.");
+            }
+		}
+		
 		//Destructor
 		~clustering()
 		{}
@@ -238,12 +269,16 @@ class clustering
 		{
 			assign_medoids();
 			
-            while (!check_termination_condition())
+            //Waiting for convergence
+            for (size_t i = 0; i < elements.size(); i++)
             {
-                //Selecting new random medoid
-                while (!select_new_random_medoid())
-                {}
+                if (check_new_medoid(i))
+                {
+					i = 0;
+				}
             }
+            
+            assign_clusters();
 		}
 		
 		const std::vector<cluster<T>>& get_clusters() const noexcept

@@ -23,7 +23,6 @@ SCENARIO("Initialization")
 		vector<size_t> medoids;
 		
 		function<float(const int&, const int&)> dist  = [](const int&, const int&){return 0.0f;};
-		function<bool(vector<int>&, const int&)> term = [](vector<int>&, const int&){return true;};
 		
 		WHEN("A clustering instance is initialized")
 		{
@@ -31,7 +30,7 @@ SCENARIO("Initialization")
 			
 			THEN("An error is thrown")
 			{
-				REQUIRE_THROWS(c = new clustering<int>(corpus, medoids, dist, term));
+				REQUIRE_THROWS(c = new clustering<int>(corpus, medoids, dist));
 				
 				if (c != nullptr)
 				{
@@ -46,14 +45,14 @@ SCENARIO("Initialization")
 		vector<size_t> medoids({99, 100});
 		
 		function<float(const int&, const int&)> dist  = [](const int&, const int&){return 0.0f;};
-		function<bool(vector<int>&, const int&)> term = [](vector<int>&, const int&){return true;};		
+
 		WHEN("A clustering instance is initialized")
 		{
 			clustering <int>* c = nullptr;
 			
 			THEN("An error is thrown")
 			{
-				REQUIRE_THROWS(c = new clustering<int>(corpus, medoids, dist, term));
+				REQUIRE_THROWS(c = new clustering<int>(corpus, medoids, dist));
 				
 				if (c != nullptr)
 				{
@@ -72,11 +71,10 @@ SCENARIO("Execution")
 		vector<size_t> medoids({2, 6});
 		
 		function<float(const int&, const int&)> dist  = [](const int& x, const int& y){return abs((float)x-(float)y);};
-		function<bool(vector<int>&, const int&)> term = [](vector<int>&, const int&){return true;};
 		
 		clustering<int> *c = nullptr;
 		
-		REQUIRE_NOTHROW(c = new clustering<int>(corpus, medoids, dist, term));
+		REQUIRE_NOTHROW(c = new clustering<int>(corpus, medoids, dist));
 		REQUIRE(c != nullptr);
 		
 		vector<int> expected1 ({1, 2, 3, 4}), expected2 ({95, 96, 97, 98});
@@ -107,20 +105,10 @@ SCENARIO("Execution")
 		vector<size_t> medoids({2, 3});
 		
 		function<float(const int&, const int&)> dist  = [](const int& x, const int& y){return abs((float)x-(float)y);};
-		function<bool(vector<int>&, const int&)> term = [](vector<int>& c, const int& m){
-			for (auto i: c)
-			{
-				if (abs(i - m) > 10)
-					return false;
-			}
-			cout << endl;
-			
-			return c.size() == 4;
-		};
 		
 		clustering<int> *c = nullptr;
 		
-		REQUIRE_NOTHROW(c = new clustering<int>(corpus, medoids, dist, term));
+		REQUIRE_NOTHROW(c = new clustering<int>(corpus, medoids, dist));
 		REQUIRE(c != nullptr);
 		vector<int> expected1 ({1, 2, 3, 4}), expected2 ({95, 96, 97, 98});
 		

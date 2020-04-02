@@ -33,7 +33,5 @@ catch2_dep = declare_dependency(
 subdir('utilities')
 subdir('thread_pool')
 subdir('clustering')
-subdir('performance_tests')
 subdir('wordnet')
 subdir('concept_map')
-subdir('test')

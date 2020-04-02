@@ -98,91 +98,63 @@ void concept_map::disambiguate()
 	function <float(const synset&, const synset&)> dist = [](const synset& s1, const synset& s2)
 	{
 		float sim = similarity::compare_words(s1, s2);
-		
-		/*					
-		//Similarity threshold
-		if (s1.id != wn.get_entity_id() && s2.id != wn.get_entity_id() && sim <= 0.25f)
-			return 1.0f;
-		if ((s1.id == wn.get_entity_id() || s2.id == wn.get_entity_id()) && sim <= 0.25f)
-			return 0.75f;
-			*/
 					
 		return 1.0f - sim;
 	};
 	
-	function <bool(std::vector<synset>&, const synset&)> termination_condition = [this](std::vector<synset>& clust, const synset& center)
-    {		
-		map<string, size_t> counters;
-		size_t not_in_cluster = 0;
-		
-		for (synset& s: clust)
+	clustering c (synset_corpus, word_corpus.size()/5, dist);
+	c.find_clusters();
+	
+	//Reading clusters
+	synset_corpus.clear(); 
+
+	//We only need one synset per word, keeping only the nearest (to the centroid) one
+	map<string, pair<synset, float>> data;
+	for (auto& clust: c.get_clusters())
+	{
+		for (size_t i = 0; i < clust.elements.size(); i++)
 		{
-			counters[this->id_to_word[s.id]]++;
-		}		
-		
-		for (const string& c: this->word_corpus)
-		{
-			if (counters[c] == 0)
-			{
-				not_in_cluster++;
-			}
-		}
-		
-		//Removing duplicates
-		if ((float) not_in_cluster/this->word_corpus.size() < 0.85f)
-		{
-			map<string, pair<string, float>> data;
+			const synset& el = clust.elements[i];
+			float dist = clust.distances[i];
 			
-			for(const auto& el: clust)
+			string word = id_to_word[el.id];
+			try
 			{
-				float dist = similarity::compare_words(el, center);
-				string word = this->id_to_word[el.id];
-				try
+				float old_dist = data.at(word).second;
+				
+				if (old_dist > dist)
 				{
-					float old_dist = data.at(word).second;
-					
-					if (old_dist < dist)
-					{
-						data[word].first = el.id;
-						data[word].second = dist;
-					}
-				} catch(...)
+					data[word].first = el.id;
+					data[word].second = dist;
+				}
+			} catch(...)
+			{
+				if (dist <= 0.95f)
 				{
-					data[word].first  = el.id;
+					data[word].first  = el;
 					data[word].second = dist;
 				}
 			}
-			
-			for (const auto& el: data)
-			{
-				this->synset_corpus.push_back(el.second.first);
-			}
-
-			return true;
 		}
-		
-		return false;
-	};
-	
-	clustering c (synset_corpus, {0, 1, 2}, dist, termination_condition);
-	synset_corpus.clear(); 
-	c.find_clusters();	
-	
-	for (const auto& el: synset_corpus)
-	{
-		this->synset_corpus.push_back(el.id);
-		cout << wordnet::get_instance().get_word(el.id) << "   " << el.id << endl;
 	}
-	cout << endl;
+	for (const auto& el: data)
+	{
+		synset_corpus.push_back(el.second.first);
+		cout << id_to_word[el.second.first.id] << endl;
+	}
+	cout << endl << endl;
 }
 
 concept_map::~concept_map()
 {}
 
+//Corpus-based and Knowledge-based Measuresof Text Semantic Similarity (Mihalcea et al. 2006)
 float concept_map::similarity(const concept_map& other)
 {	
-	size_t count = 0;
-	float score = 0.0f;
+	float score1 = 0.0f;
+	float score2 = 0.0f;
+	
+	float ic_sum = 0.0f;
 	
 	for (auto& s1: synset_corpus)
 	{
@@ -195,9 +167,48 @@ float concept_map::similarity(const concept_map& other)
 				max = sim;
 			}
 		}
-		score += max;
-		count++;
+		score1 += max;
+		ic_sum += similarity::informative_content(s1);
 	}
 	
-	return score/count;
+	score1/=ic_sum;
+	
+	ic_sum = 0.0f;
+	
+	for (auto& s1: other.synset_corpus)
+	{
+		float max = 0.0f;
+		for (auto& s2: synset_corpus)
+		{
+			float sim = similarity::compare_words(s1, s2);
+			if (sim > max)
+			{
+				max = sim;
+			}
+		}
+		score2 += max;
+		ic_sum += similarity::informative_content(s1);
+	}
+	
+	score2/=ic_sum;
+	
+	return 0.5f*(score1+score2);
+}
+
+vector<string> concept_map::get_keywords()
+{
+	vector<string> keywords;
+	keywords.reserve(synset_corpus.size());
+	
+	for (synset& s: synset_corpus)
+	{
+		keywords.push_back(id_to_word[s.id]);
+	}
+	
+	return keywords;
+}
+
+const std::vector<synset>& concept_map::get_keywords_synsets()
+{
+	return synset_corpus;
 }

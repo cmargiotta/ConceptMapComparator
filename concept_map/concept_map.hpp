@@ -31,6 +31,9 @@ class concept_map
 		
 		void 	add_child(std::string parent, std::string data);
 		float 	similarity(const concept_map& other);
+		
+		std::vector<std::string>   get_keywords();
+		const std::vector<synset>& get_keywords_synsets();
 };
 
 #endif

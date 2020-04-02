@@ -18,10 +18,14 @@ concept_map_dep = declare_dependency(
 	]
 )
 
-test = executable('test_cm', 
-    ['main.cpp'], 
+test_concept_map = executable('test_concept_map', 
+    [
+		'test/concept_map.cpp'
+    ], 
     dependencies : [
+		catch2_dep,
         concept_map_dep
     ]
 )
 
+test('test_concept_map', test_concept_map)

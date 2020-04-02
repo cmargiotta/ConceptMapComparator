@@ -2,6 +2,9 @@
 
 #include <word_to_singular.hpp>
 
+#include <locale>
+#include <algorithm>
+
 using std::vector;
 using std::string;
 
@@ -12,9 +15,10 @@ vector<synset> get_synsets(string word)
 {
 	wordnet& wn = wordnet::get_instance();
 	
+	std::transform(word.begin(), word.end(), word.begin(), ::tolower);
+	
 	try
 	{
-		cout << word << endl;
 		return wn.get_synsets(word);
 	}
 	catch(...)

@@ -76,10 +76,10 @@ float similarity::compare_words(const synset& word1, const synset& word2)
 	string semfield = nearest_common_semfield(word1, word2);
 		
 	float sim = 2.0f*informative_content(lcs)/(informative_content(word1) + informative_content(word2));
+	sim *= 0.5f;
 
 	if (semfield != "")
 	{
-		sim *= 0.5f;
 		sim += 1.0f/(word1.semfield_path.at(semfield) + word2.semfield_path.at(semfield));
 	}
 		
