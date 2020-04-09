@@ -140,9 +140,7 @@ void concept_map::disambiguate()
 	for (const auto& el: data)
 	{
 		synset_corpus.push_back(el.second.first);
-		cout << id_to_word[el.second.first.id] << endl;
 	}
-	cout << endl << endl;
 }
 
 concept_map::~concept_map()

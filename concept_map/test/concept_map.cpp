@@ -22,6 +22,9 @@ SCENARIO("Concept map keywords extraction")
 		string map = "The Roman Empire\tincluded\tLarge territorial holdings around the Mediterranean Sea\
 					  Large territorial holdings around the Mediterranean Sea\truled by\tEmperors\
 					  The Roman Empire\twas distinguished\tAlso for its accomplishments in intellectual endeavours";
+					  
+		INFO(map);
+		
 		stringstream mapstream(map);
 		
 		concept_map cm (mapstream);
@@ -29,6 +32,9 @@ SCENARIO("Concept map keywords extraction")
 		WHEN("Its keywords are computed")
 		{
 			vector<string> expected = {"roman", "empire", "emperors"};
+			
+			INFO("Keywords:");
+			CAPTURE(cm.get_keywords());
 			
 			THEN("They are correct")
 			{
@@ -47,7 +53,7 @@ SCENARIO("Concept map comparison")
 		string map1 = "The Roman Empire\tincluded\tLarge territorial holdings around the Mediterranean Sea\
 					   Large territorial holdings around the Mediterranean Sea\truled by\tEmperors\
 					   The Roman Empire\twas distinguished\tAlso for its accomplishments in intellectual endeavours";
-		string map2 = "The Roman Empire\tincluded\twas\the most extensive political and social structure in western civilization\
+		string map2 = "The Roman Empire\twas\tThe most extensive political and social structure in western civilization\
 					   Emperors\twere the rulers of\tThe Roman Empire\
 					   The Roman Empire\twas distinguished\tAlso for its accomplishments in intellectual endeavours";
 					   
@@ -57,11 +63,23 @@ SCENARIO("Concept map comparison")
 		concept_map cm1 (mapstream1);
 		concept_map cm2 (mapstream2);
 		
+		INFO("\n\n" << map1);
+		INFO("Keywords:")
+		CAPTURE(cm1.get_keywords());
+		
+		INFO("\n\n" << map2);
+		INFO("Keywords:")
+		CAPTURE(cm2.get_keywords());
+		INFO("\n");
+		
 		WHEN("The maps are compared")
 		{
+			float similarity = cm1.similarity(cm2);
+			CAPTURE(similarity);
+			
 			THEN("The similarity is correct")
 			{
-				REQUIRE_THAT(cm1.similarity(cm2), WithinAbsMatcher(0.75f, 0.1f));
+				REQUIRE_THAT(similarity, WithinAbsMatcher(0.75f, 0.1f));
 			}
 		}
 	}
