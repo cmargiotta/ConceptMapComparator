@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <cmath>
 #include <iostream>
+#include <map>
 
 #include "wordnet.hpp"
 
@@ -64,24 +65,48 @@ string similarity::nearest_common_semfield(const synset& word1, const synset& wo
 
 float similarity::informative_content(const synset& word)
 {
-	wordnet& wn = wordnet::get_instance();
+	static map<string, float> cache;
 	
-	return abs(1.0f - log(word.hyponym_count+1.0f)/log(wn.get_concept_number()));
+	try 
+	{
+		return cache.at(word.id);
+	}
+	catch (...)
+	{
+		wordnet& wn = wordnet::get_instance();
+		
+		float ic = abs(1.0f - log(word.hyponym_count+1.0f)/log(wn.get_concept_number()));
+		cache[word.id] = ic;
+		
+		return ic;
+	}
 }
 
 float similarity::compare_words(const synset& word1, const synset& word2)
 {	
-	synset lcs 		= LCS(word1, word2);
-
-	string semfield = nearest_common_semfield(word1, word2);
-		
-	float sim = 2.0f*informative_content(lcs)/(informative_content(word1) + informative_content(word2));
-	sim *= 0.5f;
-
-	if (semfield != "")
+	static map<pair<string, string>, float> cache;
+	
+	try 
 	{
-		sim += 1.0f/(word1.semfield_path.at(semfield) + word2.semfield_path.at(semfield));
+		return cache.at(make_pair(word1.id, word2.id));
 	}
+	catch (...)
+	{
+		synset lcs 		= LCS(word1, word2);
+
+		string semfield = nearest_common_semfield(word1, word2);
+			
+		float sim = 2.0f*informative_content(lcs)/(informative_content(word1) + informative_content(word2));
+		sim *= 0.5f;
+
+		if (semfield != "")
+		{
+			sim += 1.0f/(word1.semfield_path.at(semfield) + word2.semfield_path.at(semfield));
+		}
 		
-	return sim;
+		cache[make_pair(word1.id, word2.id)] = sim;
+		cache[make_pair(word2.id, word1.id)] = sim;
+			
+		return sim;
+	}
 }
