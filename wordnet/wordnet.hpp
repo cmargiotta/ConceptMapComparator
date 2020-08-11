@@ -22,6 +22,15 @@ struct synset
 	synset() {}
   
 	bool operator==(const synset& other) const;
+	inline synset& operator=(const synset& other) 
+	{
+		this->id 			= other.id;
+		this->hypernym_path = other.hypernym_path;
+		this->semfield_path = other.semfield_path;
+		this->hyponym_count = other.hyponym_count;
+		
+		return *this;
+	}
 };
 
 class wordnet
