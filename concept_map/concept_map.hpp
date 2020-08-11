@@ -13,15 +13,24 @@
 class concept_map
 {
 	private:
-		std::map<std::string, std::vector<std::string>> 	adjancencies;
-		std::map<std::string, std::string>					id_to_word;
-		std::set<std::string> 								word_corpus;
-		std::vector<synset> 								synset_corpus;
-		std::string 										data;
+		struct node
+		{
+			std::map<std::string, std::optional<synset>> synsets;
+			
+			node() {}
+		};
+	
+		std::map<std::string, node>				nodes;
+		std::map<node*, std::vector<node*>> 	adjancencies;
+		std::map<std::string, std::string>		id_to_word;
+		std::vector<synset>						synset_corpus;
 		
-		void add_to_corpus(const std::string& sentence);
+		size_t word_count;
+		
+		std::set<std::string> extract_words(const std::string& sentence);
 		void disambiguate();
-		void build_synsets();
+		node& add_node(const std::string& words);
+		void build_synsets(const std::string& word);
 	
 	public:
 		concept_map(std::string  file_path);

@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <set>
 #include <locale> 
+#include <optional>
 
 #include <similarity.hpp>
 #include <wordnet.hpp>
@@ -22,6 +23,7 @@ using std::stringstream;
 using std::set;
 using std::function;
 using std::find;
+using std::optional;
 
 using namespace std;
 
@@ -36,6 +38,8 @@ concept_map::concept_map(std::istream& input_stream)
 {
 	string node1, node2, buffer;
 	
+	set<string> sentences;
+	
 	while(!input_stream.eof())
 	{
 		//Reading first node
@@ -47,19 +51,38 @@ concept_map::concept_map(std::istream& input_stream)
 		//Reading second node
 		getline(input_stream, node2);
 		
-		//Saving relation
-		adjancencies[node1].push_back(node2);
+		node& n1 = add_node(node1);
+		node& n2 = add_node(node2);
 		
-		add_to_corpus(node1);
-		add_to_corpus(node2);
+		adjancencies[&n1].push_back(&n2);
 	}
 	
-	build_synsets();
 	disambiguate();
 }
 
-void concept_map::add_to_corpus(const string& sentence)
+concept_map::node& concept_map::add_node(const std::string& sentence)
 {
+	if (nodes.contains(sentence))
+	{
+		return nodes[sentence];
+	} else
+	{
+		nodes[sentence] = node();
+		node& n = nodes[sentence];
+		
+		set<string> words = extract_words(sentence);
+		for (const string& w: words)
+		{
+			n.synsets[w];
+		}
+		
+		return n;
+	}
+}
+
+std::set<std::string> concept_map::extract_words(const string& sentence)
+{
+	set<string> words;
 	stringstream stream (sentence);
 	string word;
 	std::locale loc;
@@ -70,26 +93,27 @@ void concept_map::add_to_corpus(const string& sentence)
 		{
 			c = std::tolower(c, loc);
 		}
-		word_corpus.insert(word);
+		words.insert(word);
 	}
+	
+	return words;
 }
 
-void concept_map::build_synsets()
+void concept_map::build_synsets(const std::string& word)
 {
-	for (const string& w: word_corpus)
+	try
 	{
-		try
+		for (const auto& syn: get_synsets(word))
 		{
-			for (const auto& syn: get_synsets(w))
-			{
-				synset_corpus.emplace_back(syn);
-				
-				id_to_word[syn.id] = w;
-			}
-		} catch(...)
-		{
-			continue;
+			synset_corpus.emplace_back(syn);
+			
+			id_to_word[syn.id] = word;
 		}
+		
+		word_count++;
+	} catch(...)
+	{
+		return;
 	}
 }
 
@@ -102,10 +126,9 @@ void concept_map::disambiguate()
 		return 1.0f - sim;
 	};
 	
-	clustering c (synset_corpus, word_corpus.size()/5, dist);
+	clustering c (synset_corpus, word_count/5, dist);
 	c.find_clusters();
 	
-	//Reading clusters
 	synset_corpus.clear(); 
 
 	//We only need one synset per word, keeping only the nearest (to the centroid) one
@@ -140,13 +163,21 @@ void concept_map::disambiguate()
 	for (const auto& el: data)
 	{
 		synset_corpus.push_back(el.second.first);
+		
+		for (auto& n: nodes)
+		{
+			if (n.second.synsets.contains(el.first))
+			{
+				n.second.synsets[el.first] = el.second.first;
+			}
+		}
 	}
 }
 
 concept_map::~concept_map()
 {}
 
-//Corpus-based and Knowledge-based Measuresof Text Semantic Similarity (Mihalcea et al. 2006)
+//Corpus-based and Knowledge-based Measures of Text Semantic Similarity (Mihalcea et al. 2006)
 float concept_map::similarity(const concept_map& other)
 {	
 	float score1 = 0.0f;
