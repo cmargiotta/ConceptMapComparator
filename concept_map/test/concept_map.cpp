@@ -50,11 +50,11 @@ SCENARIO("Concept map comparison")
 	
 	GIVEN("Two concept maps about roman empire")
 	{
-		string map1 = "The Roman Empire\tincluded\tLarge territorial holdings around the Mediterranean Sea\
-					   Large territorial holdings around the Mediterranean Sea\truled by\tEmperors\
+		string map1 = "The Roman Empire\tincluded\tLarge territorial holdings around the Mediterranean Sea\n\
+					   Large territorial holdings around the Mediterranean Sea\truled by\tEmperors\n\
 					   The Roman Empire\twas distinguished\tAlso for its accomplishments in intellectual endeavours";
-		string map2 = "The Roman Empire\twas\tThe most extensive political and social structure in western civilization\
-					   Emperors\twere the rulers of\tThe Roman Empire\
+		string map2 = "The Roman Empire\twas\tThe most extensive political and social structure in western civilization\n\
+					   Emperors\twere the rulers of\tThe Roman Empire\n\
 					   The Roman Empire\twas distinguished\tAlso for its accomplishments in intellectual endeavours";
 					   
 		stringstream mapstream1(map1);

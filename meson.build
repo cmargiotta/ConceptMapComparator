@@ -4,7 +4,8 @@ project('ConceptMapComparator',
     meson_version: '>= 0.51.0',
     default_options : [
         'warning_level=3',
-        'cpp_std=c++2a'
+        'cpp_std=c++2a',
+        'debug=true',
     ]
 )
 
