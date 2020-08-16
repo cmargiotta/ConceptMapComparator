@@ -243,7 +243,7 @@ class clustering
             {
                 throw std::runtime_error("Empty corpus.");
             }
-            
+
             medoids.reserve(medoids_number);
             for (size_t i = 0; i < medoids_number; i++)
             {

@@ -36,13 +36,12 @@ concept_map::concept_map(std::string  file_path)
 	*this = concept_map(file);
 }
 
-concept_map::concept_map(std::istream& input_stream)
+concept_map::concept_map(std::istream& input_stream):
+	word_count(0)
 {
 	string node1, node2, buffer;
 	
 	set<string> sentences;
-	
-	node* n1 = NULL;
 	
 	while(!input_stream.eof())
 	{
@@ -53,10 +52,9 @@ concept_map::concept_map(std::istream& input_stream)
 		getline(input_stream, buffer, '\t');
 		
 		//Reading second node
-		getline(input_stream, node2);
+		getline(input_stream, node2, '\n');
 		
-		n1 = add_node(node1, n1);
-		add_node(node2, n1);		
+		add_node(node2, add_node(node1, NULL));		
 	}
 	
 	disambiguate();
@@ -66,6 +64,12 @@ concept_map::node* concept_map::add_node(const std::string& sentence, node* pare
 {
 	if (nodes.contains(sentence))
 	{
+		if (parent != NULL)
+		{
+			nodes.at(sentence).parent = parent;
+			parent->children.emplace_back(&(nodes.at(sentence)));
+		}
+		
 		return &(nodes.at(sentence));
 	} else
 	{
@@ -75,8 +79,8 @@ concept_map::node* concept_map::add_node(const std::string& sentence, node* pare
 		set<string> words = extract_words(sentence);
 		for (const string& w: words)
 		{
-			n->synsets[w];
 			build_synsets(w);
+			n->words.insert(w);
 		}
 		
 		return n;
@@ -106,11 +110,18 @@ void concept_map::build_synsets(const std::string& word)
 {
 	try
 	{
-		for (const auto& syn: get_synsets(word))
+		auto s = get_synsets(word);
+		
+		for (const auto& syn: s)
 		{
 			synset_corpus.emplace_back(syn);
 			
 			id_to_word[syn.id] = word;
+		}
+		
+		if (s.size() == 1)
+		{
+			unique_synsets.emplace_back(s[0]);
 		}
 		
 		word_count++;
@@ -130,6 +141,7 @@ void concept_map::disambiguate()
 	};
 	
 	clustering c (synset_corpus, word_count/5, dist);
+	
 	c.find_clusters();
 	
 	synset_corpus.clear(); 
@@ -163,15 +175,29 @@ void concept_map::disambiguate()
 			}
 		}
 	}
-	for (const auto& el: data)
+	
+	for (auto& el: data)
 	{
 		synset_corpus.push_back(el.second.first);
 		
 		for (auto& n: nodes)
 		{
-			if (n.second.synsets.contains(el.first))
+			if (n.second.words.contains(el.first))
 			{
-				n.second.synsets[el.first] = el.second.first;
+				n.second.synsets.insert(&(*(synset_corpus.end()-1)));
+			}
+		}
+	}
+
+	for (auto& el: unique_synsets)
+	{
+		synset_corpus.push_back(el);
+		
+		for (auto& n: nodes)
+		{
+			if (n.second.words.contains(id_to_word[el.id]))
+			{
+				n.second.synsets.insert(&(*(synset_corpus.end()-1)));
 			}
 		}
 	}
@@ -181,23 +207,26 @@ concept_map::~concept_map()
 {}
 
 //Corpus-based and Knowledge-based Measures of Text Semantic Similarity (Mihalcea et al. 2006)
-float concept_map::similarity(const concept_map& other)
+float concept_map::similarity(concept_map& other)
 {	
-	for (const auto& n: nodes)
+	node* other_root;
+	for (auto& n1: other.nodes)
 	{
-		if (n.second.parent == 0)
+		if (n1.second.parent == 0)
 		{
-			for (const auto& n1: other.nodes)
-			{
-				if (n1.second.parent == 0)
-				{
-					return n.second.compare(n1.second);
-				}
-			}
+			other_root = &n1.second;
+			break;
 		}
 	}
 	
-	return 0.0f;
+	float sim = 0.0f;
+	
+	for (auto& n: nodes)
+	{
+		sim += n.second.compare(*other_root);
+	}
+	
+	return (sim/nodes.size());
 }
 
 vector<string> concept_map::get_keywords()
@@ -231,72 +260,119 @@ concept_map::node::node(const node& other):
 	children(other.children)
 {}
 
-float concept_map::node::compare_no_adjacencies(const node& other) const
+float concept_map::node::compare_no_adjacencies(node& other) const
 {
 	float score1 = 0.0f;
 	float score2 = 0.0f;
 	
 	float ic_sum = 0.0f;
+	float ic;
+	float max = 0.0f;
 	
 	for (const auto& s1: synsets)
 	{
-		float max = 0.0f;
+		max = 0.0f;
+		
 		for (const auto& s2: other.synsets)
 		{
-			float sim = similarity::compare_words(s1.second.value(), s2.second.value());
-			if (sim > max)
-			{
-				max = sim;
-			}
-		}
-		score1 += max;
-		ic_sum += similarity::informative_content(s1.second.value());
-	}
-	
-	score1/=ic_sum;
-	
-	ic_sum = 0.0f;
-	
-	for (auto& s1: other.synsets)
-	{
-		float max = 0.0f;
-		for (auto& s2: synsets)
-		{
-			float sim = similarity::compare_words(s1.second.value(), s2.second.value());
-			if (sim > max)
-			{
-				max = sim;
-			}
-		}
-		score2 += max;
-		ic_sum += similarity::informative_content(s1.second.value());
-	}
-	
-	score2/=ic_sum;
-	
-	return 0.5f*(score1+score2);
-}
+			float sim = similarity::compare_words(*s1, *s2);
 
-float concept_map::node::compare(const node& other) const
-{
-	float similarity = compare_no_adjacencies(other);
-	float adj_similarity = 0.0f;
-	
-	for (const node& n: children)
-	{
-		float max = 0.0f;
-		for (const node& n1: other.children)
-		{
-			float sim = n.compare(n1);
-			if (sim > max) 
+			if (sim > max)
 			{
 				max = sim;
 			}
 		}
 		
-		adj_similarity += max;
+		ic = similarity::informative_content(*s1);
+		score1 += max*ic;
+		ic_sum += ic;
 	}
 	
-	adj_similarity /= max(children.size(), other.children.size());
-	return 0.5f * (similarity + adj_similarity);
+	if (ic_sum == 0.0f)
+		score1 = 0;
+	else
+		score1/=ic_sum;
+		
+	ic_sum = 0.0f;
+	
+	for (auto& s1: other.synsets)
+	{
+		max = 0.0f;
+		for (auto& s2: synsets)
+		{
+			float sim = similarity::compare_words(*s1, *s2);
+			if (sim > max)
+			{
+				max = sim;
+			}		
+
+		}
+		ic = similarity::informative_content(*s1);
+		score2 += max*ic;
+		ic_sum += ic;
+	}
+	
+	if (ic_sum == 0)
+		score2 = 0;
+	else
+		score2/=ic_sum;	
+
+	return 0.5f*(score1+score2);
+}
+
+float concept_map::node::compare(node& other) const
+{
+	float similarity;
+		
+	std::function<node*(const node*, node*, node*, float)> select_best;
+	
+	select_best = 
+		[&similarity, &select_best](const node* n1, node* n2, node* best, float max)
+	{
+		float sim = n1->compare_no_adjacencies(*n2);
+
+		if (sim > max)
+		{
+			best = n2;			
+			max = sim;
+		}
+		
+		for (auto& n: n2->children)
+		{
+			node* res = select_best(n1, n, best, max);
+			
+			if (similarity > max)
+			{
+				best = res;
+				max = similarity;
+			}
+		}
+				
+		similarity = max;
+		return best;
+	};
+	
+	node* best = select_best(this, &other, &other, 0.0f);
+	
+	int dist_diff = 0;
+	node* p = parent;
+	
+	while (p != NULL)
+	{
+		p = p->parent;
+		dist_diff += 1;
+	}
+	
+	p = best->parent;
+	while (p != NULL)
+	{
+		p = p->parent;
+		dist_diff -= 1;
+	}
+	
+	dist_diff = abs(dist_diff);
+	cout << dist_diff << endl;
+	similarity /= 1 + (0.1f * dist_diff);
+	
+	return similarity;
 }
