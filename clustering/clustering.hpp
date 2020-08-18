@@ -34,7 +34,7 @@ struct cluster
 template <typename T> 
 class clustering
 {
-	static_assert(std::is_copy_constructible<T>::value, "Cannot cluster with non-copy constructable types.");
+	static_assert(std::is_copy_constructible<T>::value, "Cannot cluster non-copy constructable types.");
 	
 	private:
 		//Corpus
@@ -46,7 +46,6 @@ class clustering
 		std::vector<std::vector<float>>         similarity_matrix;
         //medoids_assignation[i] is the index of the medoid of elements[i]'s cluster 
         std::vector<size_t>                     medoids_assignation;
-        //average_distances[i] is the average distance between the medoid elements[medoids[i]] and every element in his cluster
         float                					cost;
 		
 		std::function <float(const T&, const T&)>			distance_lambda;
@@ -102,12 +101,12 @@ class clustering
             while (!pool.get_status())
             {}
             
-            cost = compute_cost();
+            compute_cost();
         }
         
         float compute_cost()
         {
-			float cost = 0.0f;
+			cost = 0.0f;
 			
             for (size_t i = 0; i < elements.size(); i++)
             {
@@ -199,17 +198,16 @@ class clustering
 	public:
 		//Constructor
 		clustering( const std::vector<T>& corpus, 
-                    const std::vector<size_t>& starting_medoids, 
+                    size_t medoids_number, 
                     std::function <float(const T&, const T&)>& dist 
                   ):
-            elements(corpus.begin(), corpus.end()),
-			medoids(starting_medoids.begin(), starting_medoids.end()), 
+			elements(corpus.begin(), corpus.end()),
 			similarity_matrix(elements.size(), std::vector<float>(elements.size(), -1.0f)),
             medoids_assignation(elements.size(), 0),
 			distance_lambda(dist), 
             distribution(0, elements.size()-1)
 		{
-            if (medoids.size() == 0)
+            if (medoids_number == 0)
             {
                 throw std::runtime_error("Cannot run clustering without medoids.");
             }
@@ -226,39 +224,29 @@ class clustering
             {
                 throw std::runtime_error("Every medoid has to be part of the corpus.");
             }
-		}
-		
-		//Constructor with random medoids
-		clustering( const std::vector<T>& corpus, 
-                    size_t medoids_number, 
-                    std::function <float(const T&, const T&)>& dist 
-                  ):
-            elements(corpus.begin(), corpus.end()),
-			similarity_matrix(elements.size(), std::vector<float>(elements.size(), -1.0f)),
-            medoids_assignation(elements.size(), 0),
-			distance_lambda(dist), 
-            distribution(0, elements.size()-1)
-		{
-            if (elements.size() == 0)
+			
+			medoids.reserve(medoids_number);
+            //K-means++
+            medoids.push_back(distribution(generator));
+            assign_medoids();
+            for (size_t m = 1; m < medoids_number; m++)
             {
-                throw std::runtime_error("Empty corpus.");
-            }
-
-            medoids.reserve(medoids_number);
-            for (size_t i = 0; i < medoids_number; i++)
-            {
-				medoids.push_back(distribution(generator));
+				std::uniform_real_distribution<float> distr(0.0f, cost);
+				float rnd = distr(generator);
+				float tmp = 0.0f;
+				
+				for (size_t k = 0; k < elements.size(); k++)
+				{
+					if (tmp >= rnd)
+					{
+						medoids.push_back(k);
+						assign_medoids();
+						break;
+					}
+					
+					tmp += distance(k, medoids_assignation[k]);
+				}
 			}
-            
-            if (!std::all_of(medoids.begin(), 
-                             medoids.end(), 
-                             [this](size_t el){
-                                    return el < this->elements.size();
-                             })
-                )
-            {
-                throw std::runtime_error("Every medoid has to be part of the corpus.");
-            }
 		}
 		
 		//Destructor
