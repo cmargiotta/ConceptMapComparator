@@ -11,15 +11,17 @@ project('ConceptMapComparator',
 
 cmake = import('cmake')
 
-cpp 		= meson.get_compiler('cpp')
+cpp 			= meson.get_compiler('cpp')
 
-pthread_dep = cpp.find_library('pthread', required : true)
-dl_dep 		= cpp.find_library('dl', required : true)
+pthread_dep 	= cpp.find_library('pthread', required : true)
+dl_dep 			= cpp.find_library('dl', required : true)
 
-sqlitecpp_dep  = declare_dependency(dependencies:  [cmake.subproject('SQLiteCpp').dependency('SQLiteCpp'), 
+sqlitecpp_dep  	= declare_dependency(dependencies:  [cmake.subproject('SQLiteCpp').dependency('SQLiteCpp'), 
 													cmake.subproject('SQLiteCpp').dependency('sqlite3'), 
 													dl_dep, 
 													pthread_dep])
+													
+cpr_dep  		= declare_dependency(dependencies:  [cmake.subproject('cpr').dependency('cpr')])
 
 catch2_main_lib = static_library(
     'catch2_main',
@@ -36,3 +38,4 @@ subdir('thread_pool')
 subdir('clustering')
 subdir('wordnet')
 subdir('concept_map')
+subdir('web')
