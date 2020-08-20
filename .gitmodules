@@ -10,3 +10,6 @@
 [submodule "subprojects/SQLiteCpp"]
 	path = subprojects/SQLiteCpp
 	url = ../../SRombauts/SQLiteCpp
+[submodule "subprojects/lithium"]
+	path = subprojects/lithium
+	url = https://github.com/matt-42/lithium
