@@ -10,6 +10,3 @@
 [submodule "subprojects/SQLiteCpp"]
 	path = subprojects/SQLiteCpp
 	url = ../../SRombauts/SQLiteCpp
-[submodule "subprojects/restinio"]
-	path = subprojects/restinio
-	url = https://github.com/Stiffstream/restinio
