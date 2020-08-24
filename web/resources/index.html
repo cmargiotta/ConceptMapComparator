@@ -2,11 +2,33 @@
 	
 <head>
 	<title>Concept Map Comparator</title>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+	<script>
+		function upload()
+		{
+			data = new FormData()
+			
+			data.append("map1", document.getElementById("first_map").files[0])
+			data.append("map2", document.getElementById("second_map").files[0])
+			
+			$.ajax({
+				url: 'upload',  
+				type: 'POST',
+				data: data,
+				success:function(data){
+					console.log(data)
+				},
+				cache: false,
+				contentType: false,
+				processData: false
+			});
+		};
+	</script>
 </head>
 
 <body>
 	<div class="center">
-		<formaction="#" onsubmit="upload">
+		<form id="maps_upload" action="#" onsubmit="upload(); return false">
 			<label for="first_map">First map</label>
 			<input id="first_map" type="file"><br>
 			<label for="second_map">Second map</label>
@@ -14,29 +36,6 @@
 			<input type="submit" id="submit" value="upload">
 		</form>
 	</div>
-	
-	<script>
-		function upload()
-		{
-			var data = new FormData()				
-
-			data.append('map1', document.getElementById('first_map').files[0];);
-			data.append('map2', document.getElementById('second_map').files[0];);
-
-			$.ajax({
-				url: 'upload'
-				type: 'post',
-				dataType: 'json',
-				data: data,
-				processData: false,
-				contentType: false,
-				success: function(res)
-				{
-					console.log(res)
-				}
-			});
-		};
-	</script>
 </body>
 
 </html>

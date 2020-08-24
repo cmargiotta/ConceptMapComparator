@@ -3,9 +3,9 @@
 #include <streambuf>
 #include <iostream>
 
-#include "lithium_http_backend.hh"
+#include <httplib.h>
 
-using namespace li;
+using namespace httplib;
 using namespace std;
 
 int main() {
@@ -14,15 +14,25 @@ int main() {
 	stringstream buffer;
 	buffer << t.rdbuf();
 	string body = buffer.str();
-	
-	cout << body;
-	
-	http_api api;
+		
+	Server svr;
 
-	api.get("") = [&](http_request&, http_response& response) {
-		cout << body;
-		response.write(body);
-	};
+	svr.Get("/", [&](const Request&, Response& res) {
+		res.set_content(body, "text/html");
+	});
+	
+	svr.Post("/upload", [&](const auto& req, auto& res) {
+		auto size = req.files.size();
+		cout << size << endl;
+		auto ret = req.has_file("map1");
+		const auto& map1 = req.get_file_value("clustering.hpp");
+		const auto& map2 = req.get_file_value("map2");
+		// file.filename;
+		// file.content_type;
+		// file.content;
+		
+		res.set_content(req.body, "text/plain");
+	});
 
-	http_serve(api, 8080);
+	svr.listen("localhost", 8080);
 }

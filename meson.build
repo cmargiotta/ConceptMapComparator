@@ -15,22 +15,16 @@ cpp 			= meson.get_compiler('cpp')
 
 pthread_dep 	= cpp.find_library('pthread', required : true)
 dl_dep 			= cpp.find_library('dl', required : true)
-openssl_dep		= cpp.find_library('ssl', required : true)
-libcrypto_dep	= cpp.find_library('libcrypto', required : true)
-boost_dep		= dependency('boost', modules: ['context'])
 
 sqlitecpp_dep  	= declare_dependency(dependencies:  [cmake.subproject('SQLiteCpp').dependency('SQLiteCpp'), 
 													cmake.subproject('SQLiteCpp').dependency('sqlite3'), 
 													dl_dep, 
 													pthread_dep])
 
-lithium_dep  	= declare_dependency(
-					include_directories: 'subprojects/lithium/single_headers',
+cpp_httplib_dep	= declare_dependency(
+					include_directories: 'subprojects/cpp-httplib/',
 					dependencies: [
-						libcrypto_dep,
-						openssl_dep,
-						boost_dep,
-						pthread_dep,
+						pthread_dep
 					]
 				)
 
