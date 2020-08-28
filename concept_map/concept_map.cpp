@@ -108,6 +108,9 @@ std::set<std::string> concept_map::extract_words(const string& sentence)
 
 void concept_map::build_synsets(const std::string& word)
 {
+	if (word.length() < 3)
+		return;
+	
 	try
 	{
 		auto s = get_synsets(word);
