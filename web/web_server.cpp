@@ -23,15 +23,14 @@ int main() {
 	
 	svr.Post("/upload", [&](const auto& req, auto& res) {
 		auto size = req.files.size();
-		cout << size << endl;
-		auto ret = req.has_file("map1");
-		const auto& map1 = req.get_file_value("clustering.hpp");
+
+		const auto& map1 = req.get_file_value("map1");
 		const auto& map2 = req.get_file_value("map2");
 		// file.filename;
 		// file.content_type;
 		// file.content;
 		
-		res.set_content(req.body, "text/plain");
+		res.set_content(map1.content, "text/plain");
 	});
 
 	svr.listen("localhost", 8080);
