@@ -14,8 +14,6 @@
 #include <clustering.hpp>
 #include <word.hpp>
 
-#include <iostream>
-
 using std::ifstream;
 using std::string;
 using std::stoi;
@@ -26,8 +24,6 @@ using std::set;
 using std::function;
 using std::find;
 using std::optional;
-
-using namespace std;
 
 concept_map::concept_map(std::string  file_path)
 {
@@ -211,25 +207,25 @@ concept_map::~concept_map()
 
 //Corpus-based and Knowledge-based Measures of Text Semantic Similarity (Mihalcea et al. 2006)
 float concept_map::similarity(concept_map& other)
-{	
-	node* other_root;
-	for (auto& n1: other.nodes)
-	{
-		if (n1.second.parent == 0)
-		{
-			other_root = &n1.second;
-			break;
-		}
-	}
+{
 	
 	float sim = 0.0f;
 	
 	for (auto& n: nodes)
 	{
-		sim += n.second.compare(*other_root);
+		float s = 0.0f;
+		
+		for (auto& other_n: other.nodes) {
+			float ss = n.second.compare(other_n.second);
+			
+			if (ss > s)
+				s = ss;
+		}
+		
+		sim += s;
 	}
 	
-	return (sim/nodes.size());
+	return (sim/(nodes.size()-1));
 }
 
 vector<string> concept_map::get_keywords()
@@ -263,7 +259,7 @@ concept_map::node::node(const node& other):
 	children(other.children)
 {}
 
-float concept_map::node::compare_no_adjacencies(node& other) const
+float concept_map::node::compare(node& other) const
 {
 	float score1 = 0.0f;
 	float score2 = 0.0f;
@@ -319,63 +315,6 @@ float concept_map::node::compare_no_adjacencies(node& other) const
 		score2 = 0;
 	else
 		score2/=ic_sum;	
-
+		
 	return 0.5f*(score1+score2);
-}
-
-float concept_map::node::compare(node& other) const
-{
-	float similarity;
-		
-	std::function<node*(const node*, node*, node*, float)> select_best;
-	
-	select_best = 
-		[&similarity, &select_best](const node* n1, node* n2, node* best, float max)
-	{
-		float sim = n1->compare_no_adjacencies(*n2);
-
-		if (sim > max)
-		{
-			best = n2;			
-			max = sim;
-		}
-		
-		for (auto& n: n2->children)
-		{
-			node* res = select_best(n1, n, best, max);
-			
-			if (similarity > max)
-			{
-				best = res;
-				max = similarity;
-			}
-		}
-				
-		similarity = max;
-		return best;
-	};
-	
-	node* best = select_best(this, &other, &other, 0.0f);
-	
-	int dist_diff = 0;
-	node* p = parent;
-	
-	while (p != NULL)
-	{
-		p = p->parent;
-		dist_diff += 1;
-	}
-	
-	p = best->parent;
-	while (p != NULL)
-	{
-		p = p->parent;
-		dist_diff -= 1;
-	}
-	
-	dist_diff = abs(dist_diff);
-	cout << dist_diff << endl;
-	similarity /= 1 + (0.1f * dist_diff);
-	
-	return similarity;
 }

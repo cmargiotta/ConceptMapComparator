@@ -3,27 +3,7 @@
 <head>
 	<title>Concept Map Comparator</title>
 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-	<script>
-		function upload()
-		{
-			data = new FormData()
-			
-			data.append("map1", document.getElementById("first_map").files[0])
-			data.append("map2", document.getElementById("second_map").files[0])
-			
-			$.ajax({
-				url: 'upload',  
-				type: 'POST',
-				data: data,
-				success:function(data){
-					console.log(data)
-				},
-				cache: false,
-				contentType: false,
-				processData: false
-			});
-		};
-	</script>
+	<script src="src.js"></script>
 </head>
 
 <body>

@@ -13,10 +13,6 @@
 
 #include <thread_pool.hpp>
 
-#include <iostream>
-using std::cout;
-using std::endl;
-
 template <typename T>
 struct cluster
 {

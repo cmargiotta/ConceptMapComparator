@@ -23,7 +23,6 @@ class concept_map
 			node(const node& other);
 
 			float compare(node& other) const;
-			float compare_no_adjacencies(node& other) const;
 		};
 	
 		std::map<std::string, node>				nodes;

@@ -1,14 +1,11 @@
 #include "wordnet.hpp"
 
 #include <utility>
-#include <iostream>
 #include <sstream>
 
 #include "db_initializer.hpp"
 
 using namespace std;
-
-using std::cout;
 
 /*** SYNSET STRUCT ***/
 
