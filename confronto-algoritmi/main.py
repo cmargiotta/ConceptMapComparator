@@ -13,6 +13,13 @@ class ConceptMap:
 	nodes = []
 	matrix = []
 	
+	adj_matrix = None
+	deg_matrix = None
+	lap_matrix = None
+	adj_eigenvector = None
+	lap_eigenvector = None
+	deg_eigenvector = None
+	
 	def __init__(self, nnodes):
 		for i in range(nnodes):
 			self.nodes.append(random.random())
@@ -57,8 +64,35 @@ class ConceptMap:
 			
 			c = c + r
 		
-		print(self.matrix)
+		self.adj_matrix = np.matrix(self.matrix)
 		
+		D = []
+		for i in range(nnodes):
+			D.append([])
+			for j in range(nnodes):
+				if i != j:
+					D[i].append(0)
+				else:
+					degree = 0
+					for ind in range(nnodes):
+						degree = degree + self.matrix[i][ind]
+					D[i].append(degree)
 		
+		self.deg_matrix = np.matrix(D)
+		self.lap_matrix = np.subtract(self.deg_matrix, self.adj_matrix)
+		self.adj_eigenvector, v = np.linalg.eig(self.adj_matrix)
+		self.adj_eigenvector = self.adj_eigenvector
+		self.lap_eigenvector, v = np.linalg.eig(self.lap_matrix)
+		self.lap_eigenvector = self.lap_eigenvector
+		self.deg_eigenvector, v = np.linalg.eig(self.deg_matrix)
+		self.deg_eigenvector = self.deg_eigenvector
 		
-cm = ConceptMap(5)
+cm = ConceptMap(3)
+print(cm.adj_matrix)
+print(cm.deg_matrix)
+print(cm.lap_matrix)
+print(cm.adj_eigenvector)
+print(cm.lap_eigenvector)
+print(cm.deg_eigenvector)
+
+
